@@ -1,0 +1,44 @@
+{
+  "name": "mc-server-manager",
+  "version": "1.0.0",
+  "description": "Générateur de serveur Minecraft (Backups, Java Custom, Vanilla, Paper, Fabric, Forge)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "author": "VOSKAY",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^31.0.1",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.mcservermanager.desktop",
+    "productName": "MC Server Manager",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/.cache",
+      "!dist"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "asarUnpack": [
+      "node_modules/pidusage/**/*",
+      "**/node_modules/pidusage/**/*"
+    ]
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "extract-zip": "^2.0.1",
+    "ip": "^2.0.1",
+    "jimp": "^1.6.0",
+    "pidusage": "^4.0.1",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  }
+}
