@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC Server Manager Demo</title>
+    <!-- On réutilise le CSS de ton application -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Style spécifique pour la démo (pour cacher les scrollbars moches dans l'iframe) -->
+    <style>
+        body { overflow: hidden; background-color: #121212; } 
+        /* Petit overlay pour dire que c'est une démo si besoin */
+        .demo-badge {
+            position: fixed; bottom: 10px; right: 10px;
+            background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71;
+            color: #2ecc71; padding: 5px 10px; border-radius: 5px; font-size: 0.8em;
+            pointer-events: none; z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-badge">INTERACTIVE PREVIEW</div>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-container">
+                <img src="logo.png" alt="Logo" class="app-logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3767/3767084.png'">
+                <div class="brand-text">MC MANAGER</div>
+            </div>
+        </div>
+        
+        <div class="nav-links">
+            <button class="nav-btn active" data-tab="dashboard">
+                <div class="icon-container"><i class="fas fa-chart-line"></i></div>
+                <span class="link-text">Tableau de bord</span>
+            </button>
+            <button class="nav-btn" data-tab="config">
+                <div class="icon-container"><i class="fas fa-cog"></i></div>
+                <span class="link-text">Configuration</span>
+            </button>
+            <button class="nav-btn" data-tab="public">
+                <div class="icon-container"><i class="fas fa-globe"></i></div>
+                <span class="link-text">Mode Public</span>
+            </button>
+            <button class="nav-btn" data-tab="performance">
+                <div class="icon-container"><i class="fas fa-rocket"></i></div>
+                <span class="link-text">Performances</span>
+            </button>
+            <button class="nav-btn" data-tab="players">
+                <div class="icon-container"><i class="fas fa-users"></i></div>
+                <span class="link-text">Joueurs</span>
+            </button>
+            <button class="nav-btn" data-tab="library">
+                <div class="icon-container"><i class="fas fa-book"></i></div>
+                <span class="link-text">Bibliothèque</span>
+            </button>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="version-text"><small>v1.0.0 (DEMO)</small></div>
+        </div>
+    </nav>
+
+    <main class="content">
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="tab-content active">
+            <h2>Tableau de bord</h2>
+            <div class="info-banner">
+                <span class="info-icon">💡</span>
+                <span><strong>Mode Démo :</strong> Vous pouvez naviguer dans les menus pour tester l'interface.</span>
+            </div>
+            
+            <div class="card control-card">
+                <div class="control-card-body">
+                    <div class="control-main-col">
+                        <div class="status-indicator">
+                            <div class="dot red"></div>
+                            <span>Serveur éteint</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Serveur Actif</label>
+                            <button class="btn-selector" style="cursor: default;">Mon Super Serveur</button>
+                        </div>
+                        <div class="row mt-10">
+                            <button class="btn-primary">LANCER LE SERVEUR</button>
+                            <button class="btn-danger" disabled>ARRÊTER</button>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+            
+            <div class="console-wrapper">
+                <div class="console-header">Terminal du Serveur</div>
+                <div class="console-output"><p class="log-info">Bienvenue dans la démo de MC Manager !<br>Ceci est une simulation de l'interface.</p></div>
+                <div class="console-input-area">
+                    <input type="text" placeholder="Entrer une commande..." disabled>
+                    <button disabled>Envoyer</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONFIG -->
+        <section id="config" class="tab-content">
+            <h2>Configuration</h2>
+            <div class="card">
+                <div class="input-group">
+                    <label>Type de Serveur</label>
+                    <div class="server-type-selector">
+                        <div class="type-btn active"><span class="type-icon">🧊</span><span class="type-name">Vanilla</span></div>
+                        <div class="type-btn"><span class="type-icon">📄</span><span class="type-name">Paper</span></div>
+                        <div class="type-btn"><span class="type-icon">🧵</span><span class="type-name">Fabric</span></div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Dossier du Serveur</label>
+                    <div class="row">
+                        <input type="text" class="styled-input" value="C:\Minecraft\Server" readonly>
+                        <button class="btn-secondary" style="width: auto;">Parcourir</button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Identité</label>
+                    <input type="text" class="styled-input" value="Mon Serveur Minecraft">
+                </div>
+            </div>
+        </section>
+
+        <!-- PUBLIC -->
+        <section id="public" class="tab-content">
+            <h2>Mode Public</h2>
+            <div class="card">
+                <div class="input-group">
+                    <label class="switch">
+                        <input type="checkbox" checked onclick="return false;">
+                        <span class="slider"></span>
+                    </label>
+                    <span style="margin-left: 15px;">Activer le mode Public (Online Mode)</span>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 5px;">
+                    <em>Activez ceci pour n'accepter que les comptes officiels Mojang/Microsoft.</em>
+                </div>
+            </div>
+        </section>
+
+        <!-- PERF -->
+        <section id="performance" class="tab-content">
+            <h2>Performances</h2>
+            <div class="card">
+                <div class="input-group">
+                    <label>Allocation RAM : <span style="color:#4CAF50">4 Go</span></label>
+                    <input type="range" min="2" max="32" value="4" class="range-slider">
+                </div>
+                <div class="input-group">
+                    <label>Distance de vue : <span style="color:#4CAF50">12 Chunks</span></label>
+                    <input type="range" min="2" max="32" value="12" class="range-slider">
+                </div>
+            </div>
+        </section>
+
+        <!-- PLAYERS -->
+        <section id="players" class="tab-content">
+            <h2>Gestion des Joueurs</h2>
+            <div class="card">
+                <div class="player-list">
+                    <p style="color:#777; text-align:center;">Aucun joueur connecté (Démo).</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- LIB -->
+        <section id="library" class="tab-content">
+            <h2>Mes Serveurs</h2>
+            <div class="library-grid">
+                <div class="card" style="padding:15px; border:1px solid #444;">
+                    <h4 style="color:white; margin:0;">Survival 1.21</h4>
+                    <p style="color:#aaa; font-size:0.8em;">Vanilla • 4GB RAM</p>
+                    <button class="btn-secondary" style="margin-top:10px; width:100%;">Charger</button>
+                </div>
+                <div class="card" style="padding:15px; border:1px solid #444;">
+                    <h4 style="color:white; margin:0;">Modded War</h4>
+                    <p style="color:#aaa; font-size:0.8em;">Forge • 8GB RAM</p>
+                    <button class="btn-secondary" style="margin-top:10px; width:100%;">Charger</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- LE SCRIPT MAGIQUE POUR SIMULER LA NAVIGATION -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navBtns = document.querySelectorAll('.nav-btn');
+            const tabs = document.querySelectorAll('.tab-content');
+
+            // Logique de navigation (Onglets)
+            navBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    // Désactiver tous les onglets
+                    navBtns.forEach(b => b.classList.remove('active'));
+                    tabs.forEach(t => t.classList.remove('active'));
+
+                    // Activer l'onglet cliqué
+                    btn.classList.add('active');
+                    const tabId = btn.getAttribute('data-tab');
+                    const targetTab = document.getElementById(tabId);
+                    if(targetTab) targetTab.classList.add('active');
+                });
+            });
+
+            // Désactiver les interactions réelles (inputs, boutons d'action)
+            // On laisse les sliders bouger pour le fun, mais les boutons ne font rien
+            document.querySelectorAll('button:not(.nav-btn)').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    // Petit effet visuel au clic
+                    btn.style.transform = "scale(0.95)";
+                    setTimeout(() => btn.style.transform = "scale(1)", 100);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
