@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>MC Server Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-container">
+                <img src="logo.png" alt="Logo" class="app-logo">
+                <div class="brand-text">MC MANAGER</div>
+            </div>
+        </div>
+        
+        <div class="nav-links">
+            <button class="nav-btn active" data-tab="dashboard">
+                <div class="icon-container"><i class="fas fa-chart-line"></i></div>
+                <span class="link-text">Tableau de bord</span>
+            </button>
+            
+            <button class="nav-btn" data-tab="config">
+                <div class="icon-container"><i class="fas fa-cog"></i></div>
+                <span class="link-text">Configuration</span>
+            </button>
+            
+            <button class="nav-btn nav-item-dynamic" id="nav-btn-public" data-tab="public">
+                <div class="icon-container"><i class="fas fa-globe"></i></div>
+                <span class="link-text">Mode Public</span>
+            </button>
+            
+            <button class="nav-btn" id="btn-tab-perf" data-tab="performance">
+                <div class="icon-container"><i class="fas fa-rocket"></i></div>
+                <span class="link-text">Performances</span>
+            </button>
+
+            <button class="nav-btn" data-tab="backups">
+                <div class="icon-container"><i class="fas fa-save"></i></div>
+                <span class="link-text">Backups</span>
+            </button>
+            
+            <button class="nav-btn" data-tab="players">
+                <div class="icon-container"><i class="fas fa-users"></i></div>
+                <span class="link-text">Joueurs</span>
+            </button>
+            
+            <button class="nav-btn" data-tab="addons">
+                <div class="icon-container"><i class="fas fa-box-open"></i></div>
+                <span class="link-text">Add-ons</span>
+            </button>
+
+            <button class="nav-btn" data-tab="worlds">
+                <div class="icon-container"><i class="fas fa-globe-americas"></i></div>
+                <span class="link-text">Gestion des Mondes</span>
+            </button>
+
+            <button class="nav-btn" data-tab="library">
+                <div class="icon-container"><i class="fas fa-book"></i></div>
+                <span class="link-text">Bibliothèque</span>
+            </button>
+
+            <button class="nav-btn" data-tab="settings">
+                <div class="icon-container"><i class="fas fa-sliders-h"></i></div>
+                <span class="link-text">Paramètres</span>
+            </button>
+            
+            <button class="nav-btn" data-tab="help">
+                <div class="icon-container"><i class="fas fa-question-circle"></i></div>
+                <span class="link-text">Aide</span>
+            </button>
+        </div>
+
+        <div class="sidebar-bottom">
+            <button id="btn-toggle-sidebar" class="toggle-btn">
+                <div class="icon-container"><span class="toggle-icon">◀</span></div>
+                <span class="link-text">Réduire</span>
+            </button>
+            <div class="version-text"><small>v1.0.0 (stable)</small></div>
+        </div>
+    </nav>
+
+    <main class="content">
+        <section id="dashboard" class="tab-content active">
+            <h2>Tableau de bord</h2>
+            <div class="card" style="display: flex; align-items: center; gap: 20px;">
+                <div id="qrcode-container" style="background: white; padding: 10px; border-radius: 8px;">
+                    </div>
+                <div>
+                    <h3 style="margin: 0 0 5px 0; color: var(--primary-color);">Connexion Mobile</h3>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.9em;">Scannez pour contrôler ce PC</p>
+                    <a id="remote-link" href="#" style="color: var(--text-primary); text-decoration: none; font-family: monospace; font-size: 1.1em; display: block; margin-top: 5px;">Chargement...</a>
+                </div>
+            </div>
+            <div class="info-banner">
+                <span class="info-icon">💡</span>
+                <span><strong>Astuce :</strong> Avant de démarrer, vérifiez vos réglages dans l'onglet <em>Performances</em>.</span>
+            </div>
+            
+            <div class="card control-card">
+                <div class="control-card-body">
+                
+                    <div class="control-main-col">
+                        <div class="status-indicator">
+                            <div id="status-dot" class="dot red"></div>
+                            <span id="status-text">Serveur éteint</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Serveur Actif</label>
+                            <button id="btn-open-selector" class="btn-selector">
+                                <span id="current-server-name" style="font-weight: 500;">-- Choisir un serveur --</span>
+                                <i class="fas fa-chevron-down" style="font-size: 0.8em; opacity: 0.7;"></i>
+                            </button>
+                        </div>
+                        <div class="row mt-10">
+                            <button id="btn-start" class="btn-primary">LANCER LE SERVEUR</button>
+                            <button id="btn-stop" class="btn-danger" disabled>ARRÊTER</button>
+                        </div>
+                    </div>
+
+                    <div class="control-stats-col" id="stats-container" style="display: none;">
+                        <div class="stat-item">
+                            <span class="stat-label">UTILISATION CPU</span>
+                            <span class="stat-value" id="stat-cpu">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">UTILISATION RAM</span>
+                            <span class="stat-value" id="stat-ram">0 MB</span>
+                        </div>
+                    </div>
+
+                </div> 
+            </div>
+            
+            <div class="console-wrapper">
+                <div class="console-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Terminal du Serveur</span>
+                    <button id="btn-open-log-viewer" class="btn-small" style="width: auto; background-color: var(--bg-card); font-weight: 600;">
+                        <i class="fas fa-history" style="margin-right: 5px;"></i> Historique
+                    </button>
+                </div>
+                <div id="console-output" class="console-output"><p class="log-info">En attente d'actions...</p></div>
+                <div class="console-input-area">
+                    <input type="text" id="command-input" placeholder="Entrer une commande..." disabled>
+                    <button id="btn-send" disabled>Envoyer</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="config" class="tab-content">
+            <h2>Configuration</h2>
+            <div class="card">
+                <div class="input-group">
+                    <label>Version Minecraft</label>
+                    <div class="version-split-container">
+                        <div class="version-column">
+                            <div class="column-header">Famille</div>
+                            <div id="major-versions-grid" class="version-grid-simple"></div>
+                        </div>
+                        <div class="version-column expanded">
+                            <div class="column-header">Version Spécifique</div>
+                            <div id="minor-versions-grid" class="version-grid-simple">
+                                <div style="padding:20px; color:#777; text-align:center;">Selectionnez une famille...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="version-select-value">
+                    <input type="hidden" id="version-select-url">
+                </div>
+
+                <div class="input-group">
+                    <label>Type de Serveur</label>
+                    <div class="server-type-selector">
+                        <div class="type-btn active" data-type="vanilla">
+                            <span class="type-icon">🧊</span><span class="type-name">Vanilla</span>
+                        </div>
+                        <div class="type-btn" data-type="paper">
+                            <span class="type-icon">📄</span><span class="type-name">Paper</span>
+                        </div>
+                        <div class="type-btn" data-type="fabric">
+                            <span class="type-icon">🧵</span><span class="type-name">Fabric</span>
+                        </div>
+                        <div class="type-btn" data-type="forge">
+                            <span class="type-icon">⚒️</span><span class="type-name">Forge</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="server-type-input" value="vanilla">
+                </div>
+
+                <div id="mod-warning-fabric" class="mod-alert" style="display: none;">
+                    <strong>⚠️ Mode Fabric</strong><br>Pour les mods légers. Gérez-les depuis l'onglet "Add-ons".
+                </div>
+                <div id="mod-warning-forge" class="mod-alert" style="display: none;">
+                    <strong>⚠️ Mode Forge</strong><br>Pour les gros modpacks. Gérez-les depuis l'onglet "Add-ons".
+                </div>
+                <div id="mod-warning-paper" class="mod-alert" style="display: none; background: rgba(76, 175, 80, 0.1); border-color: #4CAF50; color: #e8f5e9;">
+                    <strong>🚀 Mode Paper</strong><br>Pour les plugins. Gérez-les depuis l'onglet "Add-ons".
+                </div>  
+                
+                <div class="input-group">
+                    <label for="server-folder">Dossier du Serveur</label>
+                    <div class="row">
+                        <input type="text" id="server-folder" class="styled-input" placeholder="C:\..." readonly>
+                        <button id="btn-browse" class="btn-secondary" style="width: auto;">Parcourir</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Identité du Serveur</label>
+                    <div class="row">
+                        <div class="server-icon-wrapper" title="Changer l'icône">
+                            <img id="server-icon-preview" src="default.png" alt="Icon">
+                            <div class="icon-overlay"><i class="fas fa-camera"></i></div>
+                        </div>
+        
+                        <div style="flex: 1;">
+                            <input type="text" id="server-name" class="styled-input" placeholder="Nom du serveur">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group" style="margin-top: 15px;">
+                    <label for="java-path">Chemin Java (Optionnel)</label>
+                    <div class="row"><input type="text" id="java-path" class="styled-input" placeholder="Ex: C:\Program Files\Java\jdk-17\bin\java.exe"></div>
+                    <small style="color: #777; display: block; margin-top: 5px;">Laisser vide pour utiliser le Java par défaut.</small>
+                </div>
+
+                <button id="btn-save" class="btn-primary" style="width: 100%; margin-top: 20px;">CRÉER LE SERVEUR</button>
+            </div>
+        </section>
+
+        <section id="public" class="tab-content">
+            <h2>Mode Public</h2>
+            <div class="card">
+                <div class="input-group">
+                    <label class="switch">
+                        <input type="checkbox" id="public-mode-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span style="margin-left: 15px;">Activer le mode Public (Online Mode)</span>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 5px;">
+                    <em>Activez ceci pour n'accepter que les comptes officiels Mojang/Microsoft.</em>
+                </div>
+            </div>
+        </section>
+
+        <section id="performance" class="tab-content">
+            <h2>Performances</h2>
+            <div style="height: 300px; width: 100%; background: #1e1e1e; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                <canvas id="pcPerfChart"></canvas>
+            </div>
+            <div class="card">
+                <div class="input-group">
+                    <label for="ram-slider">Allocation RAM : <span id="ram-display-val" style="color:#4CAF50">4 Go</span></label>
+                    <div class="row row-center">
+                        <input type="range" id="ram-slider" min="2" max="32" value="4" step="2" class="range-slider">
+                        <input type="number" id="ram-input-custom" style="display: none; flex: 1;" placeholder="RAM" min="1" class="styled-input">
+                        <button id="btn-ram-toggle" class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
+                    </div>
+                </div>
+                <hr class="divider" style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+                <div class="input-group">
+                    <label for="render-slider">Distance de vue : <span id="render-display-val" style="color:#4CAF50">8 Chunks</span></label>
+                    <div class="row row-center">
+                        <input type="range" id="render-slider" min="2" max="32" value="8" step="2" class="range-slider">
+                        <input type="number" id="render-input-custom" style="display: none; flex: 1;" placeholder="Chunks" min="2" class="styled-input">
+                        <button id="btn-render-toggle" class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-sync-alt" style="margin-right: 10px; color: var(--primary-color);"></i>Redémarrage Automatique</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9em;">
+                    Il est conseillé de redémarrer régulièrement votre serveur (toutes les 4 à 6 heures) pour vider la mémoire et prévenir les lags.
+                </p>
+                
+                <div class="input-group" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <label for="auto-restart-toggle" style="margin-bottom: 0;">Activer le redémarrage auto</label>
+                    <label class="switch">
+                        <input type="checkbox" id="auto-restart-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="input-group" id="auto-restart-options" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-primary); padding-top: 15px;">
+                    <label for="auto-restart-hours">Redémarrer toutes les :</label>
+                    <div class="row" style="align-items: center; gap: 10px;">
+                        <input type="number" id="auto-restart-hours" class="styled-input" value="4" min="1" max="24" style="width: 80px;">
+                        <span style="color: var(--text-secondary);">heures</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3><i class="fas fa-file-alt" style="margin-right: 10px; color: var(--primary-color);"></i>Éditeur server.properties</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9em;">
+                    Modifiez directement toutes les options du fichier `server.properties`. Les modifications nécessitent un redémarrage du serveur pour être appliquées.
+                </p>
+                
+                <div class="row" style="gap: 10px; margin-bottom: 20px;">
+                    <button id="btn-load-properties" class="btn-secondary" style="flex: 1;">
+                        <i class="fas fa-sync-alt"></i> Charger les Propriétés
+                    </button>
+                    <button id="btn-save-properties" class="btn-primary" style="flex: 1;" disabled>
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+                
+                <div id="properties-editor-container" class="properties-editor-container">
+                    <p style="color: var(--text-muted); text-align: center; padding: 20px 0;">
+                        Cliquez sur "Charger" pour afficher les options.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="backups" class="tab-content">
+            <h2>Gestion des Sauvegardes</h2>
+
+            <div class="card">
+                <h3><i class="fas fa-calendar-alt" style="margin-right: 10px; color: var(--primary-color);"></i>Backups Automatiques</h3>
+                
+                <div class="input-group" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <label for="auto-backup-toggle" style="margin-bottom: 0;">Activer les backups auto</label>
+                    <label class="switch">
+                        <input type="checkbox" id="auto-backup-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="input-group" id="auto-backup-options" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-primary); padding-top: 15px;">
+                    <div class="row" style="gap: 20px;">
+                        <div style="flex: 1;">
+                            <label for="auto-backup-days">Tous les :</label>
+                            <div class="row" style="align-items: center; gap: 10px;">
+                                <input type="number" id="auto-backup-days" class="styled-input" value="1" min="1" max="30" style="width: 80px;">
+                                <span style="color: var(--text-secondary);">jours</span>
+                            </div>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="auto-backup-time">À (heure) :</label>
+                            <input type="time" id="auto-backup-time" class="styled-input" value="00:00">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="info-banner">
+                    <span class="info-icon">💾</span>
+                    <span>Les backups copient le dossier "world".</span>
+                </div>
+                <div class="row"><button id="btn-create-backup" class="btn-primary" style="width: auto;"><i class="fas fa-plus"></i> CRÉER UNE SAUVEGARDE</button></div>
+                <h3 class="mt-20">Historique</h3>
+                <div id="backup-list" class="version-container" style="max-height: 400px; margin-top: 15px;">
+                    <p style="text-align:center; padding: 20px; color: #777;">Chargement...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="players" class="tab-content">
+            <h2>Gestion des Joueurs</h2>
+            <div class="card">
+                <label for="max-players-slider">
+                    Nombre maximum de joueurs : <span id="max-players-value" style="color:#4CAF50">10</span>
+                </label>
+                <div class="row row-center" style="margin-top: 10px;">
+                    <input type="range" id="max-players-slider" min="1" max="100" value="10" class="range-slider">
+                    <input type="number" id="max-players-input" style="display: none; flex: 1;" placeholder="Nombre max" min="1" max="1000" class="styled-input">
+                    <button id="btn-max-players-toggle" class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
+                </div>
+            </div>
+            <div class="card full-height" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+    
+                <div class="sub-nav-bar">
+                    <button class="sub-nav-btn active" data-subtab="players-connected">
+                        <i class="fas fa-plug"></i> Connectés
+                    </button>
+                    <button class="sub-nav-btn" data-subtab="players-whitelist">
+                        <i class="fas fa-check-circle"></i> Whitelist
+                    </button>
+                    <button class="sub-nav-btn" data-subtab="players-banned">
+                        <i class="fas fa-gavel"></i> Bannis
+                    </button>
+                </div>
+
+                <div class="sub-tab-content-container">
+
+                    <div id="players-connected" class="sub-tab-content active">
+                        <div id="player-list" class="player-list">
+                            <p style="color:#777; text-align:center;">Aucun joueur connecté.</p>
+                        </div>
+                    </div>
+
+                    <div id="players-whitelist" class="sub-tab-content">
+                        <div class="input-group" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <input type="text" id="whitelist-add-input" class="styled-input" placeholder="Nom du joueur à whitelister">
+                            <button id="btn-whitelist-add" class="btn-primary" style="width: auto; flex-shrink: 0;">
+                                <i class="fas fa-plus"></i> Ajouter
+                            </button>
+                        </div>
+                        <div id="whitelist-list" class="player-list-manager">
+                            <p style="color:#777; text-align:center;">Chargement de la whitelist...</p>
+                        </div>
+                    </div>
+
+                    <div id="players-banned" class="sub-tab-content">
+                        <div class="input-group" style="margin-bottom: 10px;">
+                            <input type="text" id="ban-add-input" class="styled-input" placeholder="Nom du joueur à bannir">
+                        </div>
+                        <div class="input-group" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <input type="text" id="ban-reason-input" class="styled-input" placeholder="Raison (optionnel)">
+                            <button id="btn-ban-add" class="btn-danger" style="width: auto; flex-shrink: 0; background: var(--danger-color);">
+                                <i class="fas fa-plus"></i> Bannir
+                            </button>
+                        </div>
+                        <div id="ban-list" class="player-list-manager">
+                            <p style="color:#777; text-align:center;">Chargement de la liste des bannis...</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section id="addons" class="tab-content">
+            <h2><i class="fas fa-box-open" style="margin-right: 15px; color: var(--primary-color);"></i>Add-ons (Mods & Plugins)</h2>
+            
+            <div class="card">
+                <div class="input-group" style="display: flex; gap: 10px;">
+                    <input type="text" id="addon-search-input" class="styled-input" placeholder="Rechercher sur Modrinth (ex: WorldEdit, Sodium...)">
+                    <button id="btn-addon-search" class="btn-primary" style="width: auto; flex-shrink: 0;">
+                        <i class="fas fa-search"></i> Rechercher
+                    </button>
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label for="addon-type-filter">Filtrer par type :</label>
+                    <select id="addon-type-filter" class="styled-input" style="max-width: 250px; background-color: var(--bg-tertiary);">
+                        <option value="any" selected>Mods & Plugins</option>
+                        <option value="mod">Mod uniquement</option>
+                        <option value="plugin">Plugin uniquement</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card" style="padding-top: 15px;">
+                <h3>Résultats</h3>
+                <div id="addon-results-list" class="addon-results-grid">
+                    <p style="color:#777; text-align:center; padding: 20px;">Lancez une recherche pour voir les résultats.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="library" class="tab-content">
+            <h2>Mes Serveurs</h2>
+            
+            <div class="row" style="margin-bottom: 20px;">
+                <button id="btn-import-server" class="btn-secondary" style="width: auto;">
+                    <i class="fas fa-folder-open"></i> IMPORTER UN SERVEUR EXISTANT
+                </button>
+            </div>
+
+            <div id="library-list" class="library-grid"></div>
+        </section>
+
+        <section id="settings" class="tab-content">
+            <h2>Paramètres</h2>
+            
+            <div class="card" style="padding: 15px; margin-bottom: 20px;">
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label>Couleur du Thème</label>
+                    <div class="color-picker-row" id="theme-selector">
+                        <div class="theme-dot selected" data-theme="green" style="background: #4CAF50;" title="Défaut (Vert)"></div>
+                        <div class="theme-dot" data-theme="blue" style="background: #2196F3;" title="Océan (Bleu)"></div>
+                        <div class="theme-dot" data-theme="purple" style="background: #9C27B0;" title="Améthyste (Violet)"></div>
+                        <div class="theme-dot" data-theme="orange" style="background: #FF9800;" title="Sunset (Orange)"></div>
+                        <div class="theme-dot" data-theme="red" style="background: #f44336;" title="Redstone (Rouge)"></div>
+                        <div class="theme-dot" data-theme="pink" style="background: #E91E63;" title="Bonbon (Rose)"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3><i class="fas fa-shield-alt" style="color: var(--primary-color); margin-right:10px;"></i>Sécurité Mobile</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9em;">
+                    Définissez le code PIN à 4 chiffres requis pour se connecter depuis l'application mobile.
+                </p>
+                
+                <div class="row" style="align-items: center; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label style="margin-bottom: 5px;">Code PIN Actuel</label>
+                        <input type="text" id="setting-remote-pin" class="styled-input" maxlength="4" placeholder="1234" style="font-family: monospace; letter-spacing: 5px; font-weight: bold; text-align: center; font-size: 1.2em;">
+                    </div>
+                    <button id="btn-save-pin" class="btn-primary" style="width: auto; height: 48px; margin-top: 22px;">
+                        <i class="fas fa-save"></i> ENREGISTRER
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="help" class="tab-content">
+            <h2>Aide & Support</h2>
+            <div class="card" style="text-align: center; padding: 40px;">
+                <h3 style="color: #5865F2; margin-bottom: 10px;">Besoin d'aide ?</h3>
+                <p style="color: #ccc; margin-bottom: 30px;">Rejoignez notre communauté Discord !</p>
+                <button id="btn-discord" class="btn-discord">
+                    <i class="fab fa-discord"></i> Discord
+                </button>
+                <div style="margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">
+                    <small style="color: #666;">Développé par voskay</small>
+                </div>
+            </div>
+            <div class="card" style="text-align: center; padding: 40px; margin-top: 20px;">
+            <h3 style="color: #0070BA; margin-bottom: 10px;">Soutenir le projet ?</h3>
+            <p style="color: #ccc; margin-bottom: 30px;">Si ce logiciel vous est utile, vous pouvez m'offrir un café !</p>
+            <button id="btn-paypal" class="btn-paypal">
+                <i class="fab fa-paypal"></i> Faire un don PayPal
+            </button>
+        </div>
+        </section>
+
+        <section id="worlds" class="tab-content">
+            <h2><i class="fas fa-globe-americas" style="margin-right: 15px; color: var(--primary-color);"></i>Gestion des Mondes</h2>
+        
+            <div class="info-banner" style="background: rgba(244, 67, 54, 0.1); border-color: var(--danger-color); color: #ffcdd2;">
+                <span class="info-icon" style="font-size: 1.5em;">⚠️</span>
+                <span><strong>Attention :</strong> Toutes ces actions sont irréversibles et nécessitent un **serveur éteint**.</span>
+            </div>
+        
+            <div class="card">
+                <h3><i class="fas fa-upload" style="margin-right: 10px;"></i>Uploader une Map Custom</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Remplace le monde actuel par celui d'un fichier .zip (map custom, aventure, etc.).</p>
+                <button id="btn-upload-world" class="btn-primary" style="width: 100%;">
+                    <i class="fas fa-file-zip"></i> Choisir un fichier .zip...
+                </button>
+            </div>
+        
+            <div class="card">
+                <h3><i class="fas fa-exclamation-triangle" style="margin-right: 10px;"></i>Zone de Danger</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Supprime définitivement votre monde actuel pour en générer un nouveau au prochain démarrage.</p>
+                <button id="btn-reset-world" class="btn-danger" style="width: 100%;">
+                    <i class="fas fa-trash"></i> Réinitialiser le Monde
+                </button>
+            </div>
+        
+            <div class="card">
+                <h3><i class="fas fa-cogs" style="margin-right: 10px;"></i>Datapacks</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Ouvre le dossier `world/datapacks` pour y glisser vos datapacks.</p>
+                <button id="btn-open-datapacks" class="btn-secondary" style="width: 100%;">
+                    <i class="fas fa-folder-open"></i> Ouvrir le dossier Datapacks
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <div id="manager-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span id="close-modal" class="close">&times;</span>
+            <h2>Serveurs</h2><div id="modal-server-list" class="modal-list"></div>
+        </div>
+    </div>
+
+    <div id="start-alert-modal" class="modal" style="display: none; z-index: 200;">
+        <div class="modal-content" style="max-width: 450px; text-align: center;">
+            <h2 id="alert-title" style="color: #FF9800;">Attention</h2>
+            <p id="alert-message" style="font-size: 1.1em; margin: 20px 0;">Message...</p>
+            <div class="row" style="justify-content: center; margin-top: 20px;">
+                <button id="btn-alert-action" class="btn-primary">Action</button>
+                <button id="btn-alert-cancel" class="btn-secondary" style="display:none;">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="input-modal" class="modal" style="display: none; z-index: 3000;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 id="input-title" style="margin-top: 0;">Titre</h3>
+            <div class="input-group">
+                <input type="text" id="input-value" class="styled-input" autocomplete="off">
+            </div>
+            <div class="row" style="justify-content: center; margin-top: 20px;">
+                <button id="btn-input-confirm" class="btn-primary">Valider</button>
+                <button id="btn-input-cancel" class="btn-secondary">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="server-selector-modal" class="modal" style="display: none; z-index: 2500;">
+        <div class="modal-content" style="max-width: 500px; padding: 0;">
+            <div style="padding: 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">Mes Serveurs</h3>
+                <span id="close-selector" class="close" style="font-size: 1.5em; cursor: pointer;">&times;</span>
+            </div>
+            
+            <div id="popup-server-list" style="max-height: 400px; overflow-y: auto; padding: 10px;">
+                </div>
+        </div>
+    </div>
+    <div id="welcome-modal" class="modal" style="display: none; z-index: 5000;">
+        <div class="modal-content" style="max-width: 600px; text-align: left;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="logo.png" style="width: 80px; height: 80px; object-fit: contain;">
+                <h2 style="color: var(--primary-color); border: none; margin-top: 10px;">Bienvenue !</h2>
+            </div>
+            
+            <p style="font-size: 1.1em; margin-bottom: 20px; color: #eee;">
+                Vous venez d'installer <strong>MC Server Manager Ultimate</strong>. Voici ce que vous pouvez faire :
+            </p>
+
+            <ul style="list-style: none; padding: 0; margin-bottom: 25px;">
+                <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5em;">🛠️</span>
+                    <span><strong>Créez tout :</strong> Vanilla, Paper, Fabric, Forge... c'est vous qui choisissez.</span>
+                </li>
+                <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5em;">⚡</span>
+                    <span><strong>Performance :</strong> Allouez la RAM et gérez la distance de vue facilement.</span>
+                </li>
+                <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5em;">💾</span>
+                    <span><strong>Sécurité :</strong> Système de Backups intégré pour ne jamais perdre votre monde.</span>
+                </li>
+                <li style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5em;">📂</span>
+                    <span><strong>Import :</strong> Ajoutez vos serveurs existants dans la bibliothèque.</span>
+                </li>
+            </ul>
+
+            <div class="info-banner" style="font-size: 0.9em;">
+                <span class="info-icon">💡</span>
+                <span><strong>Astuce :</strong> Besoin d'aide ? Le bouton <strong>Discord</strong> est là pour ça !</span>
+            </div>
+
+            <div class="row" style="justify-content: center; margin-top: 30px;">
+                <button id="btn-close-welcome" class="btn-primary" style="width: 100%; padding: 15px; font-size: 1.1em;">
+                    C'EST PARTI ! 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    </div>
+</div>
+
+<div id="log-viewer-modal" class="modal" style="display: none; z-index: 2000;">
+    <div class="modal-content" style="max-width: 90vw; width: 1200px; height: 80vh; display: flex; flex-direction: column; padding: 0; text-align: left;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border-primary); flex-shrink: 0;">
+            <h2 style="margin: 0; padding: 0; border: none; font-size: 1.5em;">📜 Historique des Logs</h2>
+            <span id="close-log-viewer" class="close" style="font-size: 1.8em; cursor: pointer;">&times;</span>
+        </div>
+
+        <div class="log-viewer-body" style="display: flex; flex: 1; overflow: hidden;">
+            
+            <div class="log-file-list-container" style="flex: 0 0 300px; border-right: 1px solid var(--border-primary); background: var(--bg-tertiary); overflow-y: auto; padding: 10px;">
+                <div id="log-file-list">
+                    <p style="color:#777; text-align:center; padding-top: 20px;">Sélectionnez un serveur...</p>
+                </div>
+            </div>
+
+            <div class="log-content-display-container" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #0a0a0a;">
+                <pre id="log-content-display" style="flex: 1; color: #ccc; font-family: 'Consolas', monospace; font-size: 0.9em; padding: 15px; margin: 0; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word;">
+                    Sélectionnez un fichier log sur la gauche.
+                </pre>
+                <div id="log-viewer-footer" style="padding: 10px; background: var(--bg-secondary); border-top: 1px solid var(--border-primary); flex-shrink: 0; display: none;">
+                    <span id="log-file-name" style="color: var(--text-muted); font-family: monospace; font-size: 0.9em;"></span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

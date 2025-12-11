@@ -1,0 +1,1304 @@
+/**
+ * MC Server Manager - Stylesheet
+ * Version 2.1.0 - FINAL
+ */
+
+/* ========================================
+   CSS VARIABLES / THEME CONFIGURATION
+   ======================================== */
+
+:root {
+    /* Primary Colors */
+    --primary-color: #4CAF50;
+    --primary-hover: #45a049;
+    --primary-light: rgba(76, 175, 80, 0.15);
+    --primary-shadow: rgba(76, 175, 80, 0.3);
+    
+    /* Secondary Colors */
+    --secondary-color: #FF9800;
+    --secondary-hover: #F57C00;
+    --danger-color: #d32f2f;
+    --danger-hover: #b71c1c;
+    --discord-color: #5865F2;
+    
+    /* Background Colors */
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #252526;
+    --bg-card: #2c2c2c;
+    --bg-hover: #333333;
+    --bg-active: #383838;
+    
+    /* Text Colors */
+    --text-primary: #e0e0e0;
+    --text-secondary: #aaaaaa;
+    --text-muted: #777777;
+    --text-disabled: #666666;
+    
+    /* Border Colors */
+    --border-primary: #333333;
+    --border-secondary: #444444;
+    
+    /* Layout */
+    --sidebar-width: 260px;
+    --sidebar-collapsed: 80px;
+    --content-padding: 30px;
+    --border-radius: 8px;
+    --border-radius-lg: 10px;
+    
+    /* Z-index Layers */
+    --z-sidebar: 10;
+    --z-modal: 100;
+}
+
+/* ========================================
+   RESET & BASE STYLES
+   ======================================== */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--border-secondary); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #666; }
+
+/* ========================================
+   SIDEBAR NAVIGATION
+   ======================================== */
+
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+    transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: var(--z-sidebar);
+    padding: 20px 0;
+    flex-shrink: 0;
+}
+
+.sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+/* Sidebar Header */
+.sidebar-header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    padding: 0 10px;
+    overflow: hidden;
+}
+
+.brand-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    justify-content: flex-start;
+    transition: all 0.3s ease;
+}
+
+.sidebar.collapsed .brand-container { justify-content: center; padding: 0; }
+
+.app-logo { height: 40px; width: 40px; object-fit: contain; flex-shrink: 0; }
+
+.brand-text {
+    color: var(--primary-color);
+    font-size: 1.4em;
+    font-weight: bold;
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity 0.2s;
+}
+
+.sidebar.collapsed .brand-text { opacity: 0; pointer-events: none; display: none; }
+
+/* Nav Links */
+.nav-links {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.nav-btn {
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    height: 50px;
+    width: 100%;
+    font-size: 1em;
+    cursor: pointer;
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 15px;
+}
+
+.nav-btn:hover { background-color: var(--bg-card); color: var(--text-primary); transform: translateX(2px); }
+.nav-btn.active { background: var(--primary-color); color: white; font-weight: 600; box-shadow: 0 2px 8px var(--primary-shadow); }
+
+/* Icon Centering (Grid Method) */
+.icon-container {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    margin-right: 15px;
+    line-height: 0;
+    font-size: 1.2em;
+}
+
+.icon-container i, .icon-container svg, .icon-container span {
+    display: block;
+    width: auto;
+    height: auto;
+    line-height: 1;
+    text-align: center;
+}
+
+.link-text {
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity 0.2s;
+    text-align: left;
+    flex: 1;
+}
+
+/* Collapsed State */
+.sidebar.collapsed .nav-links { padding: 0 10px; }
+.sidebar.collapsed .nav-btn { justify-content: center; padding: 0; transform: none !important; }
+.sidebar.collapsed .icon-container { margin-right: 0; font-size: 1.4em; }
+.sidebar.collapsed .link-text { display: none; opacity: 0; }
+
+/* Toggle Button */
+.sidebar-bottom { margin-top: auto; padding: 0 10px; margin-bottom: 10px; }
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-disabled);
+    height: 50px;
+    width: 100%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 15px;
+    border-radius: var(--border-radius);
+    transition: 0.2s;
+}
+
+.toggle-btn:hover { background-color: var(--bg-card); color: var(--text-primary); }
+.toggle-btn .icon-container { margin-right: 15px; }
+.sidebar.collapsed .toggle-btn { justify-content: center; padding: 0; }
+.sidebar.collapsed .toggle-btn .icon-container { margin-right: 0; }
+
+.toggle-icon { transition: transform 0.3s ease; display: block; }
+.sidebar.collapsed .toggle-icon { transform: rotate(180deg); }
+
+.version-text {
+    text-align: center;
+    color: var(--border-secondary);
+    font-size: 0.75em;
+    margin-top: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.sidebar.collapsed .version-text { display: none; }
+
+.nav-item-dynamic { height: 0; opacity: 0; margin: 0; overflow: hidden; transition: all 0.3s ease; }
+.nav-item-dynamic.visible { height: 50px; opacity: 1; margin-bottom: 5px; }
+
+/* ========================================
+   MAIN CONTENT AREA
+   ======================================== */
+
+.content {
+    flex: 1;
+    padding: var(--content-padding);
+    overflow-y: auto;
+    background-color: var(--bg-primary);
+}
+
+.tab-content { display: none; animation: fadeIn 0.3s ease; }
+.tab-content.active { display: block; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================
+   TYPOGRAPHY & FORMS
+   ======================================== */
+
+h2 { margin-top: 0; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-primary); font-size: 1.8em; font-weight: 600; }
+h3 { font-size: 1.3em; margin-bottom: 15px; font-weight: 600; }
+p { line-height: 1.6; margin-bottom: 10px; }
+label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-weight: 500; }
+
+.styled-input, .styled-select, input[type="number"], input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-secondary);
+    border-radius: 5px;
+    color: var(--text-primary);
+    font-size: 1em;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.styled-input:focus, .styled-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-light); }
+
+.styled-select {
+    /* Supprime le style par défaut moche de Windows */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    /* Dimensions et Texte */
+    width: 100%;
+    padding: 12px 20px; /* Plus d'espace interne */
+    font-size: 1em;
+    font-family: inherit;
+    color: var(--text-primary);
+    cursor: pointer;
+
+    /* Design de la boîte */
+    background-color: var(--bg-tertiary);
+    border: 2px solid var(--border-secondary);
+    border-radius: 8px;
+    
+    /* Animation douce */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+    /* --- FLÈCHE PERSONNALISÉE (SVG ENCODÉ) --- */
+    /* Ceci remplace la petite flèche grise par une flèche verte moderne */
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%234CAF50%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 12px;
+    padding-right: 40px; /* Espace pour ne pas écrire sur la flèche */
+}
+
+/* Effet au survol de la souris */
+.styled-select:hover {
+    border-color: var(--primary-color); /* Bordure verte */
+    background-color: var(--bg-hover);  /* Fond légèrement plus clair */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Effet quand on clique dessus (Focus) */
+.styled-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-shadow); /* Halo vert lumineux */
+}
+
+/* Style des options (Limité par le navigateur, mais on peut changer le fond) */
+.styled-select option {
+    background-color: var(--bg-secondary);
+    color: white;
+    padding: 10px;
+}
+
+.input-group { margin-bottom: 20px; }
+.row { display: flex; gap: 10px; align-items: center; }
+.row-center { align-items: center; }
+.mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
+
+/* ========================================
+   BUTTONS
+   ======================================== */
+
+.btn, button { font-family: inherit; }
+
+.btn-primary, .btn-secondary, .btn-danger, #btn-start, #btn-stop, #btn-create-backup {
+    padding: 12px 24px;
+    font-size: 0.95em;
+    font-weight: 700;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary, #btn-start {
+    background: linear-gradient(135deg, var(--primary-color), #388E3C);
+    color: white;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    width: 100%;
+}
+.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5); }
+
+.btn-danger, #btn-stop {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    color: white;
+    box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+    width: 100%;
+}
+.btn-danger:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(244, 67, 54, 0.5); }
+
+.btn-secondary {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-secondary);
+    width: auto;
+}
+.btn-secondary:hover { background: var(--bg-hover); border-color: var(--text-secondary); }
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.85em;
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+/* ========================================
+   COMPONENTS (Cards, Status, Console)
+   ======================================== */
+
+.card {
+    background-color: var(--bg-secondary);
+    padding: 25px;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-primary);
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: #000;
+    border-radius: 20px;
+    border: 1px solid var(--border-primary);
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot.red { background-color: #f44336; box-shadow: 0 0 8px #f44336; }
+.dot.green { background-color: #4CAF50; box-shadow: 0 0 8px #4CAF50; }
+
+.console-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 400px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    margin-top: 20px;
+}
+.console-header { background: var(--bg-hover); padding: 8px 15px; font-size: 0.9em; font-family: monospace; border-bottom: 1px solid var(--border-primary); color: var(--text-secondary); }
+.console-output { flex: 1; background: #0a0a0a; padding: 15px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 0.9em; color: #ccc; }
+.console-input-area { display: flex; border-top: 1px solid var(--border-primary); }
+#command-input { flex: 1; border: none; background: var(--bg-secondary); padding: 12px; color: white; font-family: monospace; }
+#btn-send { border-radius: 0; width: 100px; background: var(--bg-tertiary); border-left: 1px solid var(--border-primary); color: var(--text-primary); }
+
+/* ========================================
+   VERSION & TYPE GRIDS
+   ======================================== */
+
+.version-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    max-height: 250px;
+    overflow-y: auto;
+    background: var(--bg-tertiary);
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border-secondary);
+}
+.version-card { background: var(--bg-card); padding: 8px; text-align: center; border-radius: 4px; cursor: pointer; border: 1px solid transparent; font-size: 0.9em; }
+.version-card:hover { background: var(--bg-active); }
+.version-card.active { background: var(--primary-light); border-color: var(--primary-color); color: white; }
+
+.server-type-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px; }
+.type-btn { background: var(--bg-card); border: 2px solid var(--border-secondary); padding: 15px; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.2s; }
+.type-btn:hover { transform: translateY(-2px); border-color: var(--text-secondary); }
+.type-btn.active { border-color: var(--primary-color); background: var(--primary-light); }
+.type-icon { font-size: 1.8em; display: block; margin-bottom: 5px; }
+
+/* ========================================
+   SLIDERS (CORRECTED)
+   ======================================== */
+
+input[type="range"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+input[type="range"]::-moz-range-thumb:hover { transform: scale(1.2); }
+
+/* ========================================
+   LAYOUT FIXES & UTILS
+   ======================================== */
+
+/* Fix Alignment in Performance/Players Tabs */
+#players .row, #performance .row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+}
+
+#players .range-slider,
+#players input[type="number"],
+#performance .range-slider,
+#performance input[type="number"] {
+    flex: 1; /* Ensure slider and text input take same space */
+    width: auto;
+    margin: 0 !important;
+}
+
+#players button, #performance button {
+    flex-shrink: 0;
+    width: auto;
+    margin-left: 10px;
+}
+
+/* Modals */
+.modal { display: none; position: fixed; z-index: var(--z-modal); left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); animation: fadeIn 0.2s; }
+.modal-content { background-color: var(--bg-secondary); margin: 10% auto; padding: 30px; border: 1px solid var(--border-secondary); width: 90%; max-width: 500px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; }
+
+/* Misc */
+.info-banner { background: rgba(33, 150, 243, 0.15); border-left: 4px solid #2196F3; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: #bbdefb; }
+.mod-alert { padding: 15px; background: rgba(255, 152, 0, 0.1); border: 1px solid #FF9800; border-radius: 5px; margin-bottom: 15px; color: #FFE0B2; }
+
+.library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+.lib-item { background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border-secondary); }
+.lib-item h4 { color: var(--primary-color); margin-bottom: 5px; }
+.lib-item p { font-size: 0.9em; color: var(--text-secondary); margin-bottom: 15px; }
+.lib-actions { display: flex; gap: 10px; }
+
+/* Switch */
+.switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-tertiary); transition: .4s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--primary-color); }
+input:checked + .slider:before { transform: translateX(26px); }
+
+@media (max-width: 768px) {
+    .sidebar { width: 0; padding: 0; }
+    .server-type-selector { grid-template-columns: 1fr 1fr; }
+}
+
+/* ========================================
+   BOUTON DISCORD (AIDE)
+   ======================================== */
+
+.btn-discord {
+    /* Couleur officielle Discord (définie dans le :root) */
+    background-color: var(--discord-color);
+    color: white;
+    border: none;
+    
+    /* Dimensions et espacement comme les autres boutons primaires */
+    padding: 12px 28px;
+    font-size: 1.1em;
+    font-weight: 600;
+    border-radius: 8px; /* Un peu plus arrondi */
+    cursor: pointer;
+    
+    /* Flexbox pour bien aligner l'icône et le texte */
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    
+    /* Animation fluide */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* L'icône à l'intérieur */
+.btn-discord i {
+    font-size: 1.3em;
+}
+
+/* Effet au survol */
+.btn-discord:hover {
+    /* On éclaire légèrement la couleur au survol */
+    background-color: #7289da; 
+    transform: translateY(-3px);
+    /* Ombre portée colorée */
+    box-shadow: 0 8px 20px rgba(88, 101, 242, 0.4);
+}
+
+/* Effet au clic */
+.btn-discord:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(88, 101, 242, 0.3);
+}
+
+/* Style pour le nouveau bouton PayPal */
+.btn-paypal {
+    padding: 12px 25px;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #fff;
+    /* Un joli dégradé bleu PayPal */
+    background: linear-gradient(145deg, #0070ba, #005ea6); 
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 112, 186, 0.2);
+}
+
+.btn-paypal:hover {
+    background: linear-gradient(145deg, #0079c1, #0069b4);
+    box-shadow: 0 6px 15px rgba(0, 112, 186, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-paypal i {
+    margin-right: 10px;
+}
+
+/* ========================================
+   NOUVEAU SÉLECTEUR DE VERSION (SPLIT)
+   ======================================== */
+
+.version-split-container {
+    display: flex;
+    gap: 15px;
+    height: 280px; /* Hauteur fixe pour le scroll */
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 8px;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.version-column {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Empêche le débordement global */
+}
+
+/* Colonne de gauche plus petite */
+.version-column:first-child {
+    flex: 1;
+    border-right: 1px solid var(--border-secondary);
+    padding-right: 10px;
+}
+
+/* Colonne de droite plus large */
+.version-column.expanded {
+    flex: 2;
+}
+
+.column-header {
+    font-size: 0.85em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    font-weight: 700;
+    padding-left: 5px;
+}
+
+.version-grid-simple {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 8px;
+    overflow-y: auto; /* Scroll ici */
+    padding-right: 5px;
+    align-content: start; /* Les éléments commencent en haut */
+    height: 100%;
+}
+
+/* Style des boutons de version */
+.v-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-secondary);
+    color: var(--text-secondary);
+    padding: 8px 5px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.v-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+/* État Actif (Vert) */
+.v-btn.active {
+    background: var(--primary-light);
+    border-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 0 8px var(--primary-shadow);
+    font-weight: bold;
+}
+
+/* Scrollbar fine pour les listes */
+.version-grid-simple::-webkit-scrollbar { width: 5px; }
+.version-grid-simple::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+/* Ajout pour l'état de chargement */
+.dot.orange { 
+    background-color: #FF9800; 
+    box-shadow: 0 0 8px #FF9800; 
+    animation: pulse 2s infinite; /* On garde l'animation de pulsation c'est joli */
+}
+
+/* Ajout de l'animation si elle n'existe pas déjà dans ton fichier */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* ========================================
+   SÉLECTEUR DE SERVEUR (POPUP)
+   ======================================== */
+
+/* Le bouton qui remplace le <select> */
+.btn-selector {
+    width: 100%;
+    padding: 15px 20px;
+    background-color: var(--bg-tertiary);
+    border: 2px solid var(--border-secondary);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 1em;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.btn-selector:hover {
+    border-color: var(--primary-color);
+    background-color: var(--bg-hover);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* Les éléments dans la liste Popup */
+.server-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    margin-bottom: 8px;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.server-list-item:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--primary-color);
+    transform: translateX(5px);
+}
+
+/* Détails du serveur dans la liste */
+.srv-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.srv-name {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #fff;
+}
+
+.srv-meta {
+    font-size: 0.85em;
+    color: #888;
+    margin-top: 4px;
+    display: flex;
+    gap: 10px;
+}
+
+.type-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #333;
+    font-size: 0.8em;
+    text-transform: uppercase;
+}
+
+/* ========================================
+   STYLE SERVEUR ACTIF (POPUP)
+   ======================================== */
+
+/* L'élément entier quand il est actif */
+.server-list-item.is-current {
+    border: 2px solid var(--primary-color); /* Bordure verte */
+    background-color: rgba(76, 175, 80, 0.15); /* Fond vert très léger */
+}
+
+/* Le nom du serveur devient vert */
+.server-list-item.is-current .srv-name {
+    color: var(--primary-color);
+    font-weight: 800;
+}
+
+/* Le petit badge "ACTUEL" */
+.badge-current {
+    font-size: 0.7em;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 10px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ========================================
+   ICÔNE DE SERVEUR (CONFIG)
+   ======================================== */
+
+.server-icon-wrapper {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid var(--border-secondary);
+    flex-shrink: 0; /* Ne pas écraser */
+    background: #000;
+}
+
+.server-icon-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Remplir le carré */
+    image-rendering: pixelated; /* Style Minecraft */
+}
+
+.icon-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.icon-overlay i {
+    color: white;
+    font-size: 1.5em;
+}
+
+.server-icon-wrapper:hover .icon-overlay {
+    opacity: 1;
+}
+
+.server-icon-wrapper:hover {
+    border-color: var(--primary-color);
+}
+
+/* Petit ajustement pour les icônes dans la liste/popup */
+.server-list-icon {
+    width: 32px; height: 32px;
+    border-radius: 4px;
+    margin-right: 12px;
+    background: #222;
+}
+
+/* ========================================
+   SÉLECTEUR DE THÈME
+   ======================================== */
+
+.theme-dot {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.theme-dot:hover {
+    transform: scale(1.1);
+}
+
+/* Cercle blanc autour quand sélectionné */
+.theme-dot.selected {
+    border-color: white;
+    transform: scale(1.15);
+    box-shadow: 0 0 10px var(--primary-color);
+}
+
+/* ========================================
+   ONGLETS INTERNES (JOUEURS)
+   ======================================== */
+
+.sub-nav-bar {
+    display: flex;
+    background-color: var(--bg-tertiary); /* Fond légèrement plus foncé */
+    border-bottom: 1px solid var(--border-primary);
+    padding: 10px;
+    gap: 10px;
+    width: 100%;
+}
+
+.sub-nav-btn {
+    flex: 1;
+    padding: 10px 15px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-secondary);
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.sub-nav-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.sub-nav-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px var(--primary-shadow);
+}
+
+.sub-tab-content-container {
+    padding: 20px;
+    flex: 1; /* Prend la hauteur restante */
+    overflow-y: auto; /* Ajoute un scroll si nécessaire */
+}
+
+.sub-tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease; /* Réutilise votre animation existante */
+}
+
+.sub-tab-content.active {
+    display: block;
+}
+
+/* Style pour les listes de joueurs (Bannis / Whitelist) */
+.player-list-manager {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px; /* Hauteur max avant scroll */
+    overflow-y: auto;
+    border-top: 1px solid var(--border-primary);
+    padding-top: 15px;
+}
+
+.player-list-item-manager {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-tertiary);
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: 1px solid var(--border-secondary);
+}
+
+.player-list-item-manager .player-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.player-list-item-manager .player-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.05em;
+}
+
+.player-list-item-manager .player-meta {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    font-family: monospace;
+}
+
+/* ========================================
+   STYLES POUR TÂCHES PLANIFIÉES
+   ======================================== */
+
+/*
+ * Force le sélecteur d'heure à s'adapter
+ * à notre thème sombre (sinon il reste blanc)
+ */
+input[type="time"] {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-secondary);
+    border-radius: 5px;
+    color: var(--text-primary);
+    font-size: 1em;
+    outline: none;
+    transition: border-color 0.2s;
+    padding: 10px 12px; /* Ajustement du padding */
+}
+
+/* Applique le style de focus standard */
+input[type="time"]:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+/* Force le "picker" (l'icône de l'horloge) à être blanc */
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* ========================================
+   LOG VIEWER MODAL
+   ======================================== */
+
+.log-file-list-container {
+    flex-shrink: 0; /* Empêche le volet de se réduire */
+}
+
+/* Style pour chaque fichier dans la liste de gauche */
+.log-file-item {
+    padding: 12px 15px;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.log-file-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.log-file-item.active {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    font-weight: bold;
+    border-left: 3px solid var(--primary-color);
+    padding-left: 12px;
+}
+
+/* Style pour les crash-reports (pour les différencier) */
+.log-file-item.crash {
+    color: var(--danger-color);
+}
+.log-file-item.crash:hover {
+    color: #ffcdd2;
+}
+.log-file-item.crash.active {
+    background: rgba(244, 67, 54, 0.1);
+    color: var(--danger-color);
+    border-left-color: var(--danger-color);
+}
+
+/* Style pour la zone de texte de droite */
+#log-content-display {
+    /* Utilise 'user-select' pour permettre de copier le texte */
+    user-select: text; 
+}
+
+/* Cacher le footer par défaut (on l'affichera avec JS) */
+#log-viewer-footer {
+    display: none; 
+}
+
+/* ========================================
+   NAVIGATEUR ADD-ONS (MODRINTH)
+   ======================================== */
+
+.addon-results-grid {
+    display: grid;
+    /* Crée une grille réactive:
+       - minmax(300px, 1fr) signifie:
+       - Chaque colonne fait au minimum 300px.
+       - "1fr" signifie qu'elles se partagent l'espace équitablement.
+       - auto-fill crée autant de colonnes que possible.
+    */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* Style de chaque carte de résultat */
+.addon-card {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--border-radius);
+    overflow: hidden; /* Pour que l'image ne dépasse pas */
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.addon-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-secondary);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+}
+
+/* Conteneur principal (icône + infos) */
+.addon-card-main {
+    display: flex;
+    padding: 15px;
+    gap: 15px;
+}
+
+.addon-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 6px;
+    background-color: var(--bg-primary); /* Fond si l'image charge mal */
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.addon-info {
+    flex: 1;
+    min-width: 0; /* Permet à l'ellipsis de fonctionner */
+}
+
+.addon-title {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 5px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Ajoute "..." si le titre est trop long */
+}
+
+.addon-author {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.addon-description {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    height: 40px; /* Limite à 2 lignes environ */
+    overflow: hidden;
+    /* Technique pour "..." sur plusieurs lignes (pas parfait mais simple) */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;  
+}
+
+/* Footer de la carte (Boutons) */
+.addon-card-footer {
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+    background-color: var(--bg-card);
+    border-top: 1px solid var(--border-primary);
+    margin-top: auto; /* Pousse le footer en bas */
+}
+
+/* ========================================
+   MISE EN PAGE CARTE DE CONTRÔLE (2 Colonnes)
+   ======================================== */
+
+.control-card {
+    /* On garde le padding d'origine, mais on l'enlève
+       pour laisser les colonnes gérer leur propre espace */
+    padding: 0;
+}
+
+.control-card-body {
+    /* C'est ici que la magie opère :
+       On active Flexbox pour aligner les 2 colonnes */
+    display: flex;
+    padding: 25px; /* On remet le padding ici */
+    gap: 20px;
+}
+
+/* Colonne de gauche (Contrôles) */
+.control-main-col {
+    /* Elle prend toute la place disponible */
+    flex: 1;
+    min-width: 0; /* Important pour le 'flex-shrink' */
+}
+
+/* Colonne de droite (Stats) */
+.control-stats-col {
+    /* Largeur fixe pour la colonne de stats */
+    flex-basis: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    
+    /* On centre les stats par rapport aux contrôles de gauche */
+    padding-top: 32px; 
+}
+
+
+/* ========================================
+   MONITEUR DE STATS (Style)
+   ======================================== */
+
+.stat-item {
+    flex: 1;
+    background: var(--bg-tertiary);
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px solid var(--border-secondary);
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5em; /* Un peu plus grand pour être bien visible */
+    font-weight: 700;
+    color: var(--primary-color);
+    font-family: monospace;
+}
+
+/* ========================================
+   ÉDITEUR SERVER.PROPERTIES
+   ======================================== */
+
+.properties-editor-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 500px;
+    overflow-y: auto;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--border-radius);
+    padding: 15px;
+}
+
+.property-item-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 1px solid var(--border-secondary);
+    padding-bottom: 12px;
+}
+
+.property-item-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.property-item-row label {
+    /* Clé de la propriété (ex: 'max-players') */
+    flex-basis: 220px;
+    flex-shrink: 0;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.property-item-row .styled-input {
+    /* Champ de valeur */
+    flex: 1;
+    margin-bottom: 0;
+    font-family: monospace;
+    font-size: 0.95em;
+    background-color: var(--bg-card);
+}
