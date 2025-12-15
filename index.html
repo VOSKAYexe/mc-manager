@@ -151,173 +151,116 @@
             </div>
         </section>
 
-        <section id="config" class="tab-content">
-            <h2>Configuration</h2>
-            <div class="card">
-                <div class="input-group">
-                    <label>Version Minecraft</label>
-                    <div class="version-split-container">
-                        <div class="version-column">
-                            <div class="column-header">Famille</div>
-                            <div id="major-versions-grid" class="version-grid-simple"></div>
-                        </div>
-                        <div class="version-column expanded">
-                            <div class="column-header">Version Spécifique</div>
-                            <div id="minor-versions-grid" class="version-grid-simple">
-                                <div style="padding:20px; color:#777; text-align:center;">Selectionnez une famille...</div>
-                            </div>
-                        </div>
+       <section id="config" class="tab-content">
+    <h2>Configuration</h2>
+    <div class="card">
+        <div class="input-group">
+            <label>Version Minecraft</label>
+            <div class="version-split-container">
+                <div class="version-column">
+                    <div class="column-header">Famille</div>
+                    <div id="major-versions-grid" class="version-grid-simple"></div>
+                </div>
+                <div class="version-column expanded">
+                    <div class="column-header">Version Spécifique</div>
+                    <div id="minor-versions-grid" class="version-grid-simple">
+                        <div style="padding:20px; color:#777; text-align:center;">Selectionnez une famille...</div>
                     </div>
-                    <input type="hidden" id="version-select-value">
-                    <input type="hidden" id="version-select-url">
-                </div>
-
-                <div class="input-group">
-                    <label>Type de Serveur</label>
-                    <div class="server-type-selector">
-                        <div class="type-btn active" data-type="vanilla">
-                            <span class="type-icon">🧊</span><span class="type-name">Vanilla</span>
-                        </div>
-                        <div class="type-btn" data-type="paper">
-                            <span class="type-icon">📄</span><span class="type-name">Paper</span>
-                        </div>
-                        <div class="type-btn" data-type="fabric">
-                            <span class="type-icon">🧵</span><span class="type-name">Fabric</span>
-                        </div>
-                        <div class="type-btn" data-type="forge">
-                            <span class="type-icon">⚒️</span><span class="type-name">Forge</span>
-                        </div>
-                    </div>
-                    <input type="hidden" id="server-type-input" value="vanilla">
-                </div>
-
-                <div id="mod-warning-fabric" class="mod-alert" style="display: none;">
-                    <strong>⚠️ Mode Fabric</strong><br>Pour les mods légers. Gérez-les depuis l'onglet "Add-ons".
-                </div>
-                <div id="mod-warning-forge" class="mod-alert" style="display: none;">
-                    <strong>⚠️ Mode Forge</strong><br>Pour les gros modpacks. Gérez-les depuis l'onglet "Add-ons".
-                </div>
-                <div id="mod-warning-paper" class="mod-alert" style="display: none; background: rgba(76, 175, 80, 0.1); border-color: #4CAF50; color: #e8f5e9;">
-                    <strong>🚀 Mode Paper</strong><br>Pour les plugins. Gérez-les depuis l'onglet "Add-ons".
-                </div>  
-                
-                <div class="input-group">
-                    <label for="server-folder">Dossier du Serveur</label>
-                    <div class="row">
-                        <input type="text" id="server-folder" class="styled-input" placeholder="C:\..." readonly>
-                        <button id="btn-browse" class="btn-secondary" style="width: auto;">Parcourir</button>
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label>Identité du Serveur</label>
-                    <div class="row">
-                        <div class="server-icon-wrapper" title="Changer l'icône">
-                            <img id="server-icon-preview" src="default.png" alt="Icon">
-                            <div class="icon-overlay"><i class="fas fa-camera"></i></div>
-                        </div>
-        
-                        <div style="flex: 1;">
-                            <input type="text" id="server-name" class="styled-input" placeholder="Nom du serveur">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="input-group" style="margin-top: 15px;">
-                    <label for="java-path">Chemin Java (Optionnel)</label>
-                    <div class="row"><input type="text" id="java-path" class="styled-input" placeholder="Ex: C:\Program Files\Java\jdk-17\bin\java.exe"></div>
-                    <small style="color: #777; display: block; margin-top: 5px;">Laisser vide pour utiliser le Java par défaut.</small>
-                </div>
-
-                <button id="btn-save" class="btn-primary" style="width: 100%; margin-top: 20px;">CRÉER LE SERVEUR</button>
-            </div>
-        </section>
-
-        <section id="public" class="tab-content">
-            <h2>Mode Public</h2>
-            <div class="card">
-                <div class="input-group">
-                    <label class="switch">
-                        <input type="checkbox" id="public-mode-toggle">
-                        <span class="slider"></span>
-                    </label>
-                    <span style="margin-left: 15px;">Activer le mode Public (Online Mode)</span>
-                </div>
-                <div style="margin-top: 20px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 5px;">
-                    <em>Activez ceci pour n'accepter que les comptes officiels Mojang/Microsoft.</em>
                 </div>
             </div>
+            <input type="hidden" id="version-select-value">
+            <input type="hidden" id="version-select-url">
+        </div>
+
+        <div class="input-group">
+            <label>Type de Serveur</label>
+            <div class="server-type-selector">
+                <div class="type-btn active" data-type="vanilla"><span class="type-icon">🧊</span><span class="type-name">Vanilla</span></div>
+                <div class="type-btn" data-type="paper"><span class="type-icon">📄</span><span class="type-name">Paper</span></div>
+                <div class="type-btn" data-type="fabric"><span class="type-icon">🧵</span><span class="type-name">Fabric</span></div>
+                <div class="type-btn" data-type="forge"><span class="type-icon">⚒️</span><span class="type-name">Forge</span></div>
+                <div class="type-btn" data-type="neoforge"><span class="type-icon">🦊</span><span class="type-name">NeoForge</span></div>
+            </div>
+            <input type="hidden" id="server-type-input" value="vanilla">
+        </div>
+
+        <div id="mod-warning-fabric" class="mod-alert" style="display: none;">⚠️ Mode Fabric</div>
+        <div id="mod-warning-forge" class="mod-alert" style="display: none;">⚠️ Mode Forge</div>
+        <div id="mod-warning-neoforge" class="mod-alert" style="display: none; border-color: #e67e22; background: rgba(230, 126, 34, 0.1); color: #e67e22;">🦊 Mode NeoForge</div>
+        <div id="mod-warning-paper" class="mod-alert" style="display: none; background: rgba(76, 175, 80, 0.1); border-color: #4CAF50; color: #e8f5e9;">🚀 Mode Paper</div>
+
+        <button id="btn-open-properties" class="btn-secondary" style="width: 100%; margin-bottom: 20px; border-style: dashed;">
+            <i class="fas fa-cogs"></i> CONFIGURER SERVER.PROPERTIES & DISTANCE VUE
+        </button>
+
+        <div class="input-group">
+            <label for="ram-slider">Allocation RAM : <span id="ram-display-val" style="color:#4CAF50">4 Go</span></label>
+            <div class="row row-center">
+                <input type="range" id="ram-slider" min="2" max="32" value="4" step="2" class="range-slider">
+                <input type="number" id="ram-input-custom" style="display: none; flex: 1;" placeholder="RAM" min="1" class="styled-input">
+                <button id="btn-ram-toggle" class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="server-folder">Dossier du Serveur</label>
+            <div class="row">
+                <input type="text" id="server-folder" class="styled-input" placeholder="C:\..." readonly>
+                <button id="btn-browse" class="btn-secondary" style="width: auto;">Parcourir</button>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Identité du Serveur</label>
+            <div class="row">
+                <div class="server-icon-wrapper" title="Changer l'icône">
+                    <img id="server-icon-preview" src="default.png" alt="Icon">
+                    <div class="icon-overlay"><i class="fas fa-camera"></i></div>
+                </div>
+                <div style="flex: 1;">
+                    <input type="text" id="server-name" class="styled-input" placeholder="Nom du serveur">
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 15px; padding: 15px; border: 1px solid var(--border-secondary);">
+            <div class="input-group" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0;">
+                <label for="auto-restart-toggle" style="margin-bottom: 0;"><i class="fas fa-sync-alt"></i> Redémarrage Automatique</label>
+                <label class="switch">
+                    <input type="checkbox" id="auto-restart-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="input-group" id="auto-restart-options" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
+                <div class="row" style="align-items: center; gap: 10px;">
+                    <span>Toutes les :</span>
+                    <input type="number" id="auto-restart-hours" class="styled-input" value="4" min="1" max="24" style="width: 80px;">
+                    <span>heures</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-group" style="margin-top: 15px;">
+            <label for="java-path">Chemin Java (Optionnel)</label>
+            <div class="row"><input type="text" id="java-path" class="styled-input" placeholder="Ex: C:\Program Files\Java\jdk-17\bin\java.exe"></div>
+        </div>
+
+        <button id="btn-save" class="btn-primary" style="width: 100%; margin-top: 20px;">CRÉER LE SERVEUR</button>
+        </div>
         </section>
 
         <section id="performance" class="tab-content">
-            <h2>Performances</h2>
-            <div style="height: 300px; width: 100%; background: #1e1e1e; padding: 20px; border-radius: 10px; margin-top: 20px;">
-                <canvas id="pcPerfChart"></canvas>
-            </div>
-            <div class="card">
-                <div class="input-group">
-                    <label for="ram-slider">Allocation RAM : <span id="ram-display-val" style="color:#4CAF50">4 Go</span></label>
-                    <div class="row row-center">
-                        <input type="range" id="ram-slider" min="2" max="32" value="4" step="2" class="range-slider">
-                        <input type="number" id="ram-input-custom" style="display: none; flex: 1;" placeholder="RAM" min="1" class="styled-input">
-                        <button id="btn-ram-toggle" class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
-                    </div>
-                </div>
-                <hr class="divider" style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
-                <div class="input-group">
-                    <label for="render-slider">Distance de vue : <span id="render-display-val" style="color:#4CAF50">8 Chunks</span></label>
-                    <div class="row row-center">
-                        <input type="range" id="render-slider" min="2" max="32" value="8" step="2" class="range-slider">
-                        <input type="number" id="render-input-custom" style="display: none; flex: 1;" placeholder="Chunks" min="2" class="styled-input">
-                        <button id="btn-render-toggle" class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
-                    </div>
-                </div>
-            </div>
+    <h2>Moniteur de Ressources</h2>
+    
+    <div style="height: 50vh; min-height: 400px; width: 100%; background: var(--bg-secondary); padding: 20px; border-radius: 10px; border: 1px solid var(--border-primary); position: relative;">
+        <canvas id="pcPerfChart"></canvas>
+    </div>
 
-            <div class="card">
-                <h3><i class="fas fa-sync-alt" style="margin-right: 10px; color: var(--primary-color);"></i>Redémarrage Automatique</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9em;">
-                    Il est conseillé de redémarrer régulièrement votre serveur (toutes les 4 à 6 heures) pour vider la mémoire et prévenir les lags.
-                </p>
-                
-                <div class="input-group" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <label for="auto-restart-toggle" style="margin-bottom: 0;">Activer le redémarrage auto</label>
-                    <label class="switch">
-                        <input type="checkbox" id="auto-restart-toggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="input-group" id="auto-restart-options" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-primary); padding-top: 15px;">
-                    <label for="auto-restart-hours">Redémarrer toutes les :</label>
-                    <div class="row" style="align-items: center; gap: 10px;">
-                        <input type="number" id="auto-restart-hours" class="styled-input" value="4" min="1" max="24" style="width: 80px;">
-                        <span style="color: var(--text-secondary);">heures</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h3><i class="fas fa-file-alt" style="margin-right: 10px; color: var(--primary-color);"></i>Éditeur server.properties</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9em;">
-                    Modifiez directement toutes les options du fichier `server.properties`. Les modifications nécessitent un redémarrage du serveur pour être appliquées.
-                </p>
-                
-                <div class="row" style="gap: 10px; margin-bottom: 20px;">
-                    <button id="btn-load-properties" class="btn-secondary" style="flex: 1;">
-                        <i class="fas fa-sync-alt"></i> Charger les Propriétés
-                    </button>
-                    <button id="btn-save-properties" class="btn-primary" style="flex: 1;" disabled>
-                        <i class="fas fa-save"></i> Enregistrer
-                    </button>
-                </div>
-                
-                <div id="properties-editor-container" class="properties-editor-container">
-                    <p style="color: var(--text-muted); text-align: center; padding: 20px 0;">
-                        Cliquez sur "Charger" pour afficher les options.
-                    </p>
-                </div>
-            </div>
-        </section>
+    <div class="info-banner" style="margin-top: 20px;">
+        <span class="info-icon">📊</span>
+        <span>Ce graphique affiche la consommation CPU et RAM du processus serveur Java en temps réel.</span>
+    </div>
+</section>
 
         <section id="backups" class="tab-content">
             <h2>Gestion des Sauvegardes</h2>
@@ -673,6 +616,41 @@
     </div>
 </div>
 
+<button id="btn-wizard-next" class="wizard-fab">
+        <span>Étape Suivante</span> <i class="fas fa-arrow-right"></i>
+    </button>
+
+    <div id="properties-modal" class="modal" style="display: none; z-index: 2500;">
+    <div class="modal-content" style="max-width: 600px; text-align: left; height: 80vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0; border: none;">Configuration Avancée</h2>
+            <span id="close-properties-modal" class="close" style="font-size: 2em; cursor: pointer;">&times;</span>
+        </div>
+
+        <div style="overflow-y: auto; flex: 1; padding-right: 5px;">
+            
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="input-group">
+                    <label for="render-slider">Distance de vue : <span id="render-display-val" style="color:#4CAF50">8 Chunks</span></label>
+                    <div class="row row-center">
+                        <input type="range" id="render-slider" min="2" max="32" value="8" step="2" class="range-slider">
+                        <input type="number" id="render-input-custom" style="display: none; flex: 1;" placeholder="Chunks" min="2" class="styled-input">
+                        <button id="btn-render-toggle" class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>server.properties</h3>
+                <div id="properties-editor-container" class="properties-editor-container"></div>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 20px; justify-content: flex-end;">
+            <button id="btn-save-properties-modal" class="btn-primary">Enregistrer & Fermer</button>
+        </div>
+    </div>
+</div>
     <script src="renderer.js"></script>
 </body>
 </html>

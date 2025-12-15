@@ -23,6 +23,7 @@ const DOM = {
     serverSelectorModal: document.getElementById('server-selector-modal'),
     popupServerList: document.getElementById('popup-server-list'),
     closeSelector: document.getElementById('close-selector'),
+    btnWizardNext: document.getElementById('btn-wizard-next'),
     
     // Console
     consoleOutput: document.getElementById('console-output'),
@@ -44,6 +45,10 @@ const DOM = {
     serverFolder: document.getElementById('server-folder'),
     serverName: document.getElementById('server-name'),
     javaPathInput: document.getElementById('java-path'),
+    btnOpenProperties: document.getElementById('btn-open-properties'),
+    propertiesModal: document.getElementById('properties-modal'),
+    closePropertiesModal: document.getElementById('close-properties-modal'),
+    btnSavePropertiesModal: document.getElementById('btn-save-properties-modal'),
     
     // Icones
     serverIconPreview: document.getElementById('server-icon-preview'),
@@ -57,6 +62,7 @@ const DOM = {
     modWarningFabric: document.getElementById('mod-warning-fabric'),
     modWarningForge: document.getElementById('mod-warning-forge'),
     modWarningPaper: document.getElementById('mod-warning-paper'),
+    modWarningNeoForge: document.getElementById('mod-warning-neoforge'),
     
     // Options
     publicModeToggle: document.getElementById('public-mode-toggle'),
@@ -159,7 +165,10 @@ const STATE = {
     serverIsReady: false,
     selectedVersion: null,
     selectedServerType: 'vanilla',
-    connectedPlayers: []
+    connectedPlayers: [],
+    wizardActive: false,
+    wizardStepsVisited: new Set(),
+    statsSum: { cpu: 0, ram: 0, count: 0 }
 };
 
 const DEFAULT_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAIlSURBVHhe7ZvtbcMwDITpIv0oXaQfTYfpR+kivWg/CmQ7Cxw4siU9HxCHCwwG+0Gync+Xuw/8Pc/z9eXz/P7+S6/X6+V8Pp/u9/vpb/y2bdtpvV6n5/N5ut1up9/xO7/X9/l8vqf3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f3/P//+A4I+m74a8A3RAAAAAElFTkSuQmCC';
@@ -210,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeWorldManager();
     initializeQRCode();
     initializeSettings();
+    initializePropertiesModal();
 });
 
 // ========================================
@@ -276,10 +286,36 @@ function openServerSelector() {
         list.innerHTML = ''; 
         const currentLoadedPath = DOM.serverFolder ? DOM.serverFolder.value : '';
 
+        // --- AJOUT : BOUTON "CRÉER NOUVEAU" EN HAUT ---
+        const createItem = document.createElement('div');
+        createItem.className = 'server-list-item';
+        // Style spécial pour le distinguer (bordure pointillée ou couleur différente)
+        createItem.style.border = '2px dashed var(--text-secondary)';
+        createItem.style.justifyContent = 'center';
+        
+        createItem.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px; font-weight:bold; color:var(--primary-color);">
+                <i class="fas fa-plus-circle" style="font-size:1.2em;"></i>
+                <span>CRÉER UN NOUVEAU SERVEUR</span>
+            </div>
+        `;
+
+        createItem.addEventListener('click', () => {
+            prepareNewServerCreation();
+            DOM.serverSelectorModal.style.display = 'none';
+        });
+        list.appendChild(createItem);
+        // -----------------------------------------------
+
         if (servers.length === 0) {
-            list.innerHTML = '<p style="text-align:center; color:#777; padding:20px;">Aucun serveur trouvé.</p>';
+            const p = document.createElement('p');
+            p.style.textAlign = 'center'; p.style.color = '#777'; p.style.padding = '20px';
+            p.textContent = 'Aucun serveur existant.';
+            list.appendChild(p);
         } else {
+            // Tri par date
             servers.sort((a, b) => new Date(b.lastModified || 0) - new Date(a.lastModified || 0));
+            
             servers.forEach(server => {
                 const item = document.createElement('div');
                 item.className = 'server-list-item';
@@ -290,12 +326,13 @@ function openServerSelector() {
                 if (server.type === 'paper') icon = '📄';
                 if (server.type === 'fabric') icon = '🧵';
                 if (server.type === 'forge') icon = '⚒️';
+                if (server.type === 'neoforge') icon = '🦊';
                 const badgeHtml = isCurrent ? '<span class="badge-current">ACTUEL</span>' : '';
 
                 item.innerHTML = `
                     <div class="srv-info">
                         <span class="srv-name">${server.name} ${badgeHtml}</span>
-                        <div class="srv-meta"><span class="type-badge">${icon} ${server.type}</span><span>Version : ${server.version || '?'}</span></div>
+                        <div class="srv-meta"><span class="type-badge">${icon} ${server.type}</span><span>Ver: ${server.version || '?'}</span></div>
                     </div>
                     <i class="fas ${isCurrent ? 'fa-check-circle' : 'fa-play-circle'}" style="color: var(--primary-color); font-size: 1.5em;"></i>
                 `;
@@ -311,19 +348,161 @@ function openServerSelector() {
     });
 }
 
+// ========================================
+// LOGIQUE DE L'ASSISTANT (WIZARD)
+// ========================================
+
+function prepareNewServerCreation() {
+    // 1. Reset visuel
+    if (DOM.currentServerName) {
+        DOM.currentServerName.innerHTML = '<i class="fas fa-plus"></i> Nouveau Serveur (En cours...)';
+        DOM.currentServerName.style.color = "var(--text-secondary)";
+    }
+
+    // 2. Vider les champs
+    if (DOM.serverFolder) DOM.serverFolder.value = '';
+    if (DOM.serverName) DOM.serverName.value = '';
+    if (DOM.javaPathInput) DOM.javaPathInput.value = '';
+    if (DOM.serverIconPreview) DOM.serverIconPreview.src = DEFAULT_ICON;
+
+    // 3. INITIALISER LE MODE WIZARD
+    STATE.wizardActive = true;
+    STATE.wizardStepsVisited.clear();
+    STATE.wizardStepsVisited.add('config'); // On commence ici
+
+    // Cacher le bouton "Créer" statique pour éviter la confusion
+    if(DOM.btnSave) DOM.btnSave.style.display = 'none';
+
+    // Afficher le bouton flottant
+    updateWizardButton('config');
+    DOM.btnWizardNext.style.display = 'flex';
+
+    // 4. Navigation vers le début
+    const configTabBtn = document.querySelector('[data-tab="config"]');
+    if (configTabBtn) configTabBtn.click();
+
+    // 5. Désactiver Start
+    if (DOM.btnStart) DOM.btnStart.disabled = true;
+    if (DOM.statusText) DOM.statusText.textContent = 'Configuration...';
+}
+
+// Connecter le clic du bouton flottant
+if(DOM.btnWizardNext) {
+    DOM.btnWizardNext.addEventListener('click', handleWizardNextStep);
+}
+
+function handleWizardNextStep() {
+    // Détermine l'onglet actuel
+    const currentTab = document.querySelector('.tab-content.active').id;
+    STATE.wizardStepsVisited.add(currentTab); // Marquer comme fait
+
+    let nextTabId = '';
+
+    switch (currentTab) {
+        case 'config':
+            // Validation minimale avant de passer à la suite
+            if (!DOM.serverFolder.value || !DOM.serverName.value) {
+                window.MCServerManager.showAlert("Configuration", "Veuillez choisir un nom et un dossier avant de continuer.");
+                return;
+            }
+            // On sauvegarde silencieusement la config de base
+            saveServerConfig(); 
+            nextTabId = 'performance';
+            break;
+
+        case 'performance':
+            nextTabId = 'backups';
+            break;
+
+        case 'backups':
+            // Condition pour Add-ons : Seulement si PAS vanilla
+            const type = STATE.selectedServerType || 'vanilla';
+            if (type !== 'vanilla') {
+                nextTabId = 'addons';
+            } else {
+                nextTabId = 'worlds';
+            }
+            break;
+
+        case 'addons':
+            nextTabId = 'worlds';
+            break;
+
+        case 'worlds':
+            finishWizard();
+            return; // On arrête ici
+    }
+
+    // Navigation
+    if (nextTabId) {
+        const targetBtn = document.querySelector(`[data-tab="${nextTabId}"]`);
+        if (targetBtn) targetBtn.click();
+        updateWizardButton(nextTabId);
+    }
+}
+
+function updateWizardButton(stepId) {
+    if (!DOM.btnWizardNext) return;
+    
+    // Par défaut
+    DOM.btnWizardNext.innerHTML = '<span>Étape Suivante</span> <i class="fas fa-arrow-right"></i>';
+    DOM.btnWizardNext.style.background = 'var(--primary-color)';
+
+    // Cas spécifiques
+    if (stepId === 'worlds') {
+        DOM.btnWizardNext.innerHTML = '<span>Terminer la configuration</span> <i class="fas fa-check"></i>';
+        DOM.btnWizardNext.style.background = '#2196F3'; // Bleu pour la fin
+    }
+}
+
+function finishWizard() {
+    STATE.wizardActive = false;
+    DOM.btnWizardNext.style.display = 'none';
+    
+    // Réafficher le bouton statique "Créer" (même s'il ne sert plus à rien pour cette session)
+    if(DOM.btnSave) DOM.btnSave.style.display = 'block';
+
+    // Aller au dashboard
+    const dashBtn = document.querySelector('[data-tab="dashboard"]');
+    if (dashBtn) dashBtn.click();
+
+    // Activer le bouton Start
+    if (DOM.btnStart) {
+        DOM.btnStart.disabled = false;
+        DOM.btnStart.textContent = 'LANCER LE SERVEUR';
+    }
+    if (DOM.statusText) DOM.statusText.textContent = 'Prêt';
+
+    window.MCServerManager.showAlert("Terminé", "La configuration est terminée ! Vous pouvez lancer le serveur.");
+}
+
 function selectServer(server) {
+    // 1. Mise à jour visuelle du sélecteur
     if (DOM.currentServerName) {
         DOM.currentServerName.textContent = server.name;
         DOM.currentServerName.style.color = "var(--primary-color)";
     }
+
+    // 2. Remplissage des champs de configuration
     if (DOM.serverFolder) DOM.serverFolder.value = server.path;
     if (DOM.serverName) DOM.serverName.value = server.name;
     if (DOM.javaPathInput) DOM.javaPathInput.value = server.javaPath || '';
     
-    // ...
+    // 3. Gestion de la version
+    // On récupère l'ID (parfois stocké sous 'version', parfois 'versionId')
+    const vId = server.version || server.versionId;
+    
+    if (DOM.versionInput) DOM.versionInput.value = vId;
+    
+    // --- CORRECTION ICI : ON MET À JOUR L'ÉTAT GLOBAL ---
+    // C'est ce qui manquait pour que la recherche d'addons fonctionne
+    STATE.selectedVersion = { id: vId }; 
+    // ----------------------------------------------------
+
+    // 4. Sélection du type (Vanilla, Forge, NeoForge...)
     selectServerType(server.type || 'vanilla');
     
-    // ICONE AVEC FALLBACK INTEGREE
+    // 5. Chargement de l'icône avec gestion d'erreur (Fallback)
     const iconPath = `file://${server.path}/server-icon.png`;
     const img = new Image();
     
@@ -331,25 +510,26 @@ function selectServer(server) {
         if(DOM.serverIconPreview) DOM.serverIconPreview.src = `${iconPath}?t=${Date.now()}`; 
     };
     
-    // C'est ici que la magie opère : on utilise la variable DEFAULT_ICON
+    // Si l'image n'existe pas, on met l'image par défaut
     img.onerror = () => { 
         if(DOM.serverIconPreview) DOM.serverIconPreview.src = DEFAULT_ICON; 
     };
     
     img.src = iconPath;
 
-    // Mise à jour des tâches planifiées
+    // 6. Mise à jour des tâches planifiées (UI)
     const restartConfig = server.autoRestart || { enabled: false, intervalHours: 4 };
-    DOM.autoRestartToggle.checked = restartConfig.enabled;
-    DOM.autoRestartHours.value = restartConfig.intervalHours;
-    DOM.autoRestartOptions.style.display = restartConfig.enabled ? 'block' : 'none';
+    if(DOM.autoRestartToggle) DOM.autoRestartToggle.checked = restartConfig.enabled;
+    if(DOM.autoRestartHours) DOM.autoRestartHours.value = restartConfig.intervalHours;
+    if(DOM.autoRestartOptions) DOM.autoRestartOptions.style.display = restartConfig.enabled ? 'block' : 'none';
 
     const backupConfig = server.autoBackup || { enabled: false, intervalDays: 1, atTime: '00:00' };
-    DOM.autoBackupToggle.checked = backupConfig.enabled;
-    DOM.autoBackupDays.value = backupConfig.intervalDays;
-    DOM.autoBackupTime.value = backupConfig.atTime;
-    DOM.autoBackupOptions.style.display = backupConfig.enabled ? 'block' : 'none';
+    if(DOM.autoBackupToggle) DOM.autoBackupToggle.checked = backupConfig.enabled;
+    if(DOM.autoBackupDays) DOM.autoBackupDays.value = backupConfig.intervalDays;
+    if(DOM.autoBackupTime) DOM.autoBackupTime.value = backupConfig.atTime;
+    if(DOM.autoBackupOptions) DOM.autoBackupOptions.style.display = backupConfig.enabled ? 'block' : 'none';
 
+    // 7. Lecture des propriétés pour le mode Public
     window.api.readServerProps(server.path).then(props => {
         if (props && DOM.publicModeToggle) DOM.publicModeToggle.checked = props.onlineMode;
     });
@@ -563,6 +743,86 @@ function initializeServerControls() {
     if (DOM.serverIconWrapper) DOM.serverIconWrapper.addEventListener('click', changeIconConfig);
 }
 
+function initializePropertiesModal() {
+    // 1. Ouvrir la modale (avec vérification)
+    if (DOM.btnOpenProperties) {
+        DOM.btnOpenProperties.addEventListener('click', async () => {
+            const serverPath = DOM.serverFolder.value;
+            
+            // Pas de dossier sélectionné
+            if (!serverPath) {
+                window.MCServerManager.showAlert("Erreur", "Veuillez d'abord sélectionner ou créer un dossier serveur.");
+                return;
+            }
+
+            // Vérification existence fichier server.properties
+            // On tente de le lire. Si l'objet est vide, c'est qu'il n'existe pas ou est vide.
+            try {
+                const props = await window.api.readServerProps(serverPath);
+                
+                // Si l'objet est vide (pas de propriétés), on suppose que le serveur n'a jamais été lancé
+                if (!props || Object.keys(props).length === 0) {
+                    window.MCServerManager.showAlert(
+                        "Fichier manquant", 
+                        "Le fichier `server.properties` n'est pas encore généré.\n\nLancez le serveur au moins une fois pour qu'il se crée, puis revenez ici."
+                    );
+                    return;
+                }
+
+                // Tout est bon, on charge l'éditeur et on ouvre
+                renderPropertiesForm(props); // Votre ancienne fonction existante
+                DOM.propertiesModal.style.display = 'block';
+
+            } catch (e) {
+                window.MCServerManager.showAlert("Erreur", "Impossible de vérifier le fichier : " + e.message);
+            }
+        });
+    }
+
+    // 2. Fermer la modale
+    if (DOM.closePropertiesModal) {
+        DOM.closePropertiesModal.addEventListener('click', () => DOM.propertiesModal.style.display = 'none');
+    }
+
+    // 3. Sauvegarder depuis la modale
+    if (DOM.btnSavePropertiesModal) {
+        DOM.btnSavePropertiesModal.addEventListener('click', async () => {
+            // Sauvegarde server.properties (fonction existante un peu modifiée pour ne pas utiliser les anciens boutons)
+            await saveServerPropertiesFromModal();
+            DOM.propertiesModal.style.display = 'none';
+        });
+    }
+}
+
+// Fonction adaptée de votre ancien saveServerProperties
+async function saveServerPropertiesFromModal() {
+    const serverPath = DOM.serverFolder.value;
+    if (!serverPath) return;
+
+    try {
+        const newProps = {};
+        // On récupère simplement tous les inputs générés qui ont l'attribut data-key
+        const inputs = document.getElementById('properties-editor-container').querySelectorAll('[data-key]');
+        
+        inputs.forEach(input => {
+            newProps[input.dataset.key] = input.value;
+        });
+
+        // NOTE : On ne récupère plus DOM.renderSlider manuellement ici car 'view-distance' 
+        // fait maintenant partie de la boucle 'inputs' ci-dessus.
+
+        const result = await window.api.saveServerProps(serverPath, newProps);
+        
+        if (result.success) {
+            window.MCServerManager.showAlert('Succès', 'Configuration enregistrée ! Redémarrez le serveur pour appliquer.');
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (e) {
+        window.MCServerManager.showAlert('Erreur', e.message);
+    }
+}
+
 async function changeIconConfig() {
     if (!DOM.serverFolder.value) { showAlert('Erreur', 'Sélectionnez un serveur.'); return; }
     const res = await window.api.changeServerIcon(DOM.serverFolder.value);
@@ -574,21 +834,84 @@ async function changeIconConfig() {
     }
 }
 
-function startServer() {
+async function startServer() {
     if (DOM.statsContainer) DOM.statsContainer.style.display = 'none'; 
     const config = getServerConfig();
+    
     if (!config.folderPath) { showAlert('Attention', 'Sélectionnez un dossier.'); return; }
+
+    // --- VERIFICATION WIZARD (PRO WARNING) ---
+    if (STATE.wizardActive) {
+        // Le wizard est toujours actif, donc l'utilisateur a sauté des étapes
+        const requiredSteps = ['performance', 'backups', 'worlds'];
+        // On ajoute addons si nécessaire
+        if (config.type !== 'vanilla') requiredSteps.push('addons');
+
+        const missedSteps = requiredSteps.filter(step => !STATE.wizardStepsVisited.has(step));
+
+        if (missedSteps.length > 0) {
+            // Traduction des ID en noms propres
+            const stepNames = {
+                'performance': 'Performances',
+                'backups': 'Sauvegardes',
+                'addons': 'Add-ons',
+                'worlds': 'Gestion des Mondes'
+            };
+            const prettyMissed = missedSteps.map(s => stepNames[s]).join(', ');
+
+            const confirm = await confirmAction(
+                "⚠️ Configuration Incomplète", 
+                `Vous êtes sur le point de lancer le serveur sans avoir vérifié les étapes suivantes : \n\n[ ${prettyMissed} ]\n\nSouhaitez-vous vraiment procéder avec les paramètres par défaut ?`
+            );
+
+            if (!confirm) return; // L'utilisateur annule
+            
+            // S'il confirme, on désactive le wizard pour ne plus l'embêter
+            finishWizard(); // Cela va aussi rediriger vers le dashboard, mais on continue l'exécution
+            // On attend un petit peu que l'UI se mette à jour
+            await new Promise(r => setTimeout(r, 500));
+        }
+    }
+    // ------------------------------------------
+
     STATE.serverRunning = true; STATE.serverIsReady = false;
     if (DOM.btnStart) { DOM.btnStart.disabled = true; DOM.btnStart.textContent = 'LANCEMENT...'; }
     if (DOM.btnStop) DOM.btnStop.disabled = false; if (DOM.commandInput) DOM.commandInput.disabled = false; if (DOM.btnSend) DOM.btnSend.disabled = false;
     if (DOM.consoleOutput) DOM.consoleOutput.innerHTML = '';
     if (DOM.statusDot) DOM.statusDot.className = 'dot orange'; if (DOM.statusText) DOM.statusText.textContent = 'Démarrage...';
+    
     logToConsole('=== DÉMARRAGE ===');
     window.api.startServer(config);
     setTimeout(() => { loadSavedServers(config.folderPath); }, 1000);
 }
 
-function stopServer() { if (!STATE.serverRunning) return; if (DOM.btnStop) DOM.btnStop.disabled = true; if (DOM.statusText) DOM.statusText.textContent = 'Arrêt...'; window.api.stopServer(); }
+// ... à l'intérieur de startServer() ...
+
+    STATE.serverRunning = true; STATE.serverIsReady = false;
+
+    // --- AJOUT : RESET DES MOYENNES & GRAPHIQUE ---
+    STATE.statsSum = { cpu: 0, ram: 0, count: 0 };
+    if (document.getElementById('avg-cpu-display')) {
+        document.getElementById('avg-cpu-display').textContent = '0.0%';
+        document.getElementById('avg-ram-display').textContent = '0 MB';
+    }
+    // Optionnel : On remet le graphique à plat pour que ce soit cohérent
+    if (pcChartInstance) {
+        pcChartInstance.data.datasets.forEach(dataset => {
+            dataset.data.fill(0);
+        });
+        pcChartInstance.update();
+    }
+    // ----------------------------------------------
+
+    if (DOM.btnStart) { DOM.btnStart.disabled = true; DOM.btnStart.textContent = 'LANCEMENT...'; }
+// ... suite du code ...
+
+function stopServer() { 
+    if (!STATE.serverRunning) return;
+     if (DOM.btnStop) DOM.btnStop.disabled = true; 
+     if (DOM.statusText) DOM.statusText.textContent = 'Arrêt...'; 
+     window.api.stopServer(); }
 
 // ========================================
 // HELPERS
@@ -655,22 +978,348 @@ function onServerStopped() {
     // 6. Logger l'arrêt dans la console
     logToConsole('=== ARRÊT ===');
 }
-function initializeSidebar() { if (DOM.toggleSidebarBtn) DOM.toggleSidebarBtn.addEventListener('click', () => DOM.sidebar.classList.toggle('collapsed')); }
-function initializeNavigation() { DOM.navButtons.forEach(b => b.addEventListener('click', () => { DOM.navButtons.forEach(x=>x.classList.remove('active')); DOM.tabContents.forEach(x=>x.classList.remove('active')); b.classList.add('active'); const t=document.getElementById(b.dataset.tab); if(t){t.classList.add('active'); if(b.dataset.tab==='backups')loadBackups();} })); }
-function initializeSliders() { setupSlider('ram', 'Go', 2, 128); setupSlider('render', 'Chunks', 2, 64); setupSlider('max-players', '', 1, 1000); }
-function setupSlider(n,u,min,max){ const s=document.getElementById(`${n}-slider`), d=document.getElementById(`${n}${n==='max-players'?'-value':'-display-val'}`), i=document.getElementById(`${n}-input${n==='max-players'?'':'-custom'}`), t=document.getElementById(`btn-${n}-toggle`); if(!s)return; let m=false; s.addEventListener('input',()=>d.textContent=s.value+(u?` ${u}`:'')); t.addEventListener('click',()=>{ m=!m; if(m){s.style.display='none';i.style.display='block';i.value=s.value;t.textContent='Slider';i.dataset.active='true';}else{s.style.display='block';i.style.display='none';i.dataset.active='false';const v=parseInt(i.value);if(v>=min&&v<=max){s.value=v;d.textContent=v+(u?` ${u}`:'');}t.textContent='Manuel';} }); i.addEventListener('input',()=>{const v=parseInt(i.value);if(v>=min&&v<=max)d.textContent=v+(u?` ${u}`:'');}); }
-function initializeServerTypeSelector(){ 
-    DOM.typeButtons.forEach(b=>b.addEventListener('click',()=>selectServerType(b.dataset.type))); 
+/* ========================================
+   INTERFACE & NAVIGATION
+   ======================================== */
+
+function initializeSidebar() {
+    if (DOM.toggleSidebarBtn) {
+        DOM.toggleSidebarBtn.addEventListener('click', () => {
+            DOM.sidebar.classList.toggle('collapsed');
+        });
+    }
 }
-function selectServerType(t){ STATE.selectedServerType=t; if(DOM.serverTypeInput)DOM.serverTypeInput.value=t; DOM.typeButtons.forEach(b=>{ b.classList.remove('active'); if(b.dataset.type===t)b.classList.add('active'); }); if(DOM.modWarningFabric)DOM.modWarningFabric.style.display='none'; if(DOM.modWarningForge)DOM.modWarningForge.style.display='none'; if(DOM.modWarningPaper)DOM.modWarningPaper.style.display='none'; switch(t){ case 'fabric': if(DOM.modWarningFabric)DOM.modWarningFabric.style.display='block'; break; case 'forge': if(DOM.modWarningForge)DOM.modWarningForge.style.display='block'; break; case 'paper': if(DOM.modWarningPaper)DOM.modWarningPaper.style.display='block'; break; } }
-function openModsFolder(){ if(DOM.serverFolder.value)window.api.openModsFolder(DOM.serverFolder.value); else showAlert('Erreur','Pas de dossier'); }
-function openPluginsFolder(){ if(DOM.serverFolder.value)window.api.openPluginsFolder(DOM.serverFolder.value); else showAlert('Erreur','Pas de dossier'); }
-async function loadVersions(){ const M=document.getElementById('major-versions-grid'), m=document.getElementById('minor-versions-grid'); if(!M)return; M.innerHTML='Loading...'; try{ const v=await window.api.getVersions(); if(!v.length)throw 0; const g={}; v.forEach(x=>{ const k=x.id.match(/^(\d+\.\d+)/)?.[1]||"Autre"; if(!g[k])g[k]=[]; g[k].push(x); }); M.innerHTML=''; m.innerHTML='<div style="padding:20px;text-align:center;color:#777;">Choisir famille</div>'; Object.keys(g).forEach((k,i)=>{ const b=document.createElement('div'); b.className='v-btn'; b.textContent=k; b.addEventListener('click',()=>{ document.querySelectorAll('#major-versions-grid .v-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); m.innerHTML=''; g[k].forEach((y,j)=>{ const bb=document.createElement('div'); bb.className='v-btn'; bb.textContent=y.id; if(STATE.selectedVersion?.id===y.id)bb.classList.add('active'); bb.addEventListener('click',()=>{ document.querySelectorAll('#minor-versions-grid .v-btn').forEach(z=>z.classList.remove('active')); bb.classList.add('active'); STATE.selectedVersion=y; if(DOM.versionInput)DOM.versionInput.value=y.id; if(DOM.versionUrlInput)DOM.versionUrlInput.value=y.url; }); m.appendChild(bb); if(j===0&&!STATE.selectedVersion){bb.click();} }); }); M.appendChild(b); if(i===0)b.click(); }); }catch(e){ M.innerHTML='Erreur'; } }
-function initializeConsole(){ if(DOM.btnSend)DOM.btnSend.addEventListener('click',sendCommand); if(DOM.commandInput)DOM.commandInput.addEventListener('keypress',e=>{if(e.key==='Enter')sendCommand();}); if(window.api){ if(window.api.onConsoleLog)window.api.onConsoleLog(logToConsole); if(window.api.onServerStopped)window.api.onServerStopped(onServerStopped); if(window.api.onServerReady)window.api.onServerReady(onServerReady); if(window.api.onPlayerJoined)window.api.onPlayerJoined(onPlayerJoined); if(window.api.onPlayerLeft)window.api.onPlayerLeft(onPlayerLeft); if(window.api.onServerStats)window.api.onServerStats(onServerStats); } }
-function sendCommand(){ if(DOM.commandInput&&DOM.commandInput.value.trim()&&STATE.serverRunning){ const c=DOM.commandInput.value.trim(); window.api.sendCommand(c); logToConsole(`> ${c}`); DOM.commandInput.value=''; } }
-function logToConsole(t){ if(!DOM.consoleOutput)return; const p=document.createElement('p'); p.textContent=t; if(t.includes('ERROR')||t.includes('FAILED'))p.style.color='#f44336'; else if(t.includes('WARN'))p.style.color='#ff9800'; else if(t.includes('INFO'))p.style.color='#2196f3'; else if(t.includes('joined'))p.style.color='#4caf50'; DOM.consoleOutput.appendChild(p); DOM.consoleOutput.scrollTop=DOM.consoleOutput.scrollHeight; const l=t.toLowerCase(); if(!STATE.serverIsReady&&(l.includes('done')||l.includes('for help, type')))onServerReady(); }
-async function browseForFolder(){ try{const p=await window.api.selectFolder(); if(p){DOM.serverFolder.value=p;}}catch(e){} }
-async function saveServerConfig(){ const c=getServerConfig(); if(!c.folderPath||!c.name){showAlert('Erreur','Nom et dossier requis');return;} showAlert('Ok','Prêt.'); }
+
+function initializeNavigation() {
+    DOM.navButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Désactiver tous les boutons et onglets
+            DOM.navButtons.forEach(x => x.classList.remove('active'));
+            DOM.tabContents.forEach(x => x.classList.remove('active'));
+
+            // Activer l'élément cliqué
+            btn.classList.add('active');
+            const targetTab = document.getElementById(btn.dataset.tab);
+            
+            if (targetTab) {
+                targetTab.classList.add('active');
+                
+                // Cas Backups
+                if (btn.dataset.tab === 'backups') {
+                    loadBackups();
+                }
+
+                // --- AJOUT : Cas Performance ---
+                if (btn.dataset.tab === 'performance') {
+                    // On attend 50ms que le CSS "display: block" s'applique
+                    setTimeout(() => {
+                        initializePcChart();
+                    }, 50);
+                }
+                // -------------------------------
+            }
+        });
+    });
+}
+/* ========================================
+   SLIDERS & INPUTS
+   ======================================== */
+
+function initializeSliders() {
+    setupSlider('ram', 'Go', 2, 128);
+    setupSlider('render', 'Chunks', 2, 64);
+    setupSlider('max-players', '', 1, 1000);
+}
+
+function setupSlider(name, unit, min, max) {
+    // Récupération dynamique des IDs
+    const slider = document.getElementById(`${name}-slider`);
+    // Gère la différence d'ID pour max-players
+    const display = document.getElementById(`${name}${name === 'max-players' ? '-value' : '-display-val'}`);
+    const input = document.getElementById(`${name}-input${name === 'max-players' ? '' : '-custom'}`);
+    const toggleBtn = document.getElementById(`btn-${name}-toggle`);
+
+    if (!slider) return;
+
+    let isManualMode = false;
+
+    // Mise à jour du texte quand on bouge le slider
+    slider.addEventListener('input', () => {
+        display.textContent = slider.value + (unit ? ` ${unit}` : '');
+    });
+
+    // Bouton de bascule Slider <-> Manuel
+    toggleBtn.addEventListener('click', () => {
+        isManualMode = !isManualMode;
+        
+        if (isManualMode) {
+            slider.style.display = 'none';
+            input.style.display = 'block';
+            input.value = slider.value;
+            toggleBtn.textContent = 'Slider';
+            input.dataset.active = 'true';
+        } else {
+            slider.style.display = 'block';
+            input.style.display = 'none';
+            input.dataset.active = 'false';
+            
+            // Validation de la valeur manuelle avant de revenir au slider
+            const val = parseInt(input.value);
+            if (val >= min && val <= max) {
+                slider.value = val;
+                display.textContent = val + (unit ? ` ${unit}` : '');
+            }
+            toggleBtn.textContent = 'Manuel';
+        }
+    });
+
+    // Mise à jour du texte quand on écrit dans l'input manuel
+    input.addEventListener('input', () => {
+        const val = parseInt(input.value);
+        if (val >= min && val <= max) {
+            display.textContent = val + (unit ? ` ${unit}` : '');
+        }
+    });
+}
+
+/* ========================================
+   TYPES DE SERVEUR
+   ======================================== */
+
+function initializeServerTypeSelector() {
+    DOM.typeButtons.forEach(btn => {
+        btn.addEventListener('click', () => selectServerType(btn.dataset.type));
+    });
+}
+
+function selectServerType(type) {
+    STATE.selectedServerType = type;
+    
+    if (DOM.serverTypeInput) {
+        DOM.serverTypeInput.value = type;
+    }
+
+    // Gestion de la classe active sur les boutons
+    DOM.typeButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.type === type) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Réinitialisation des alertes
+    if (DOM.modWarningFabric) DOM.modWarningFabric.style.display = 'none';
+    if (DOM.modWarningForge) DOM.modWarningForge.style.display = 'none';
+    if (DOM.modWarningPaper) DOM.modWarningPaper.style.display = 'none';
+    if (DOM.modWarningNeoForge) DOM.modWarningNeoForge.style.display = 'none';
+
+    // Affichage de l'alerte correspondante
+    switch (type) {
+        case 'fabric':
+            if (DOM.modWarningFabric) DOM.modWarningFabric.style.display = 'block';
+            break;
+        case 'forge':
+            if (DOM.modWarningForge) DOM.modWarningForge.style.display = 'block';
+            break;
+        case 'paper':
+            if (DOM.modWarningPaper) DOM.modWarningPaper.style.display = 'block';
+            break;
+            case 'neoforge':
+            if (DOM.modWarningNeoForge) DOM.modWarningNeoForge.style.display = 'block';
+            break;
+    }
+}
+
+/* ========================================
+   UTILITAIRES DOSSIERS
+   ======================================== */
+
+function openModsFolder() {
+    if (DOM.serverFolder.value) {
+        window.api.openModsFolder(DOM.serverFolder.value);
+    } else {
+        showAlert('Erreur', 'Pas de dossier sélectionné');
+    }
+}
+
+function openPluginsFolder() {
+    if (DOM.serverFolder.value) {
+        window.api.openPluginsFolder(DOM.serverFolder.value);
+    } else {
+        showAlert('Erreur', 'Pas de dossier sélectionné');
+    }
+}
+
+/* ========================================
+   GESTION DES VERSIONS
+   ======================================== */
+
+async function loadVersions() {
+    const majorGrid = document.getElementById('major-versions-grid');
+    const minorGrid = document.getElementById('minor-versions-grid');
+
+    if (!majorGrid) return;
+
+    majorGrid.innerHTML = 'Loading...';
+
+    try {
+        const versions = await window.api.getVersions();
+        if (!versions.length) throw new Error("Aucune version trouvée");
+
+        // Regrouper par version majeure (ex: 1.20, 1.19)
+        const grouped = {};
+        versions.forEach(ver => {
+            const key = ver.id.match(/^(\d+\.\d+)/)?.[1] || "Autre";
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(ver);
+        });
+
+        majorGrid.innerHTML = '';
+        minorGrid.innerHTML = '<div style="padding:20px;text-align:center;color:#777;">Choisir famille</div>';
+
+        // Création des boutons de familles (colonne gauche)
+        Object.keys(grouped).forEach((key, index) => {
+            const btn = document.createElement('div');
+            btn.className = 'v-btn';
+            btn.textContent = key;
+
+            btn.addEventListener('click', () => {
+                // Gestion visuelle active
+                document.querySelectorAll('#major-versions-grid .v-btn').forEach(x => x.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Remplissage colonne droite
+                minorGrid.innerHTML = '';
+                grouped[key].forEach((subVer, subIndex) => {
+                    const subBtn = document.createElement('div');
+                    subBtn.className = 'v-btn';
+                    subBtn.textContent = subVer.id;
+
+                    if (STATE.selectedVersion?.id === subVer.id) subBtn.classList.add('active');
+
+                    subBtn.addEventListener('click', () => {
+                        document.querySelectorAll('#minor-versions-grid .v-btn').forEach(z => z.classList.remove('active'));
+                        subBtn.classList.add('active');
+                        
+                        STATE.selectedVersion = subVer;
+                        if (DOM.versionInput) DOM.versionInput.value = subVer.id;
+                        if (DOM.versionUrlInput) DOM.versionUrlInput.value = subVer.url;
+                    });
+
+                    minorGrid.appendChild(subBtn);
+
+                    // Sélectionne automatiquement la première version de la liste par défaut
+                    if (subIndex === 0 && !STATE.selectedVersion) {
+                        subBtn.click();
+                    }
+                });
+            });
+
+            majorGrid.appendChild(btn);
+            // Clic automatique sur le premier groupe au chargement
+            if (index === 0) btn.click();
+        });
+
+    } catch (e) {
+        majorGrid.innerHTML = 'Erreur lors du chargement des versions';
+    }
+}
+
+/* ========================================
+   CONSOLE & COMMANDES
+   ======================================== */
+
+function initializeConsole() {
+    if (DOM.btnSend) {
+        DOM.btnSend.addEventListener('click', sendCommand);
+    }
+    if (DOM.commandInput) {
+        DOM.commandInput.addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendCommand();
+        });
+    }
+
+    // Liaison des événements IPC (Backend -> Frontend)
+    if (window.api) {
+        if (window.api.onConsoleLog) window.api.onConsoleLog(logToConsole);
+        if (window.api.onServerStopped) window.api.onServerStopped(onServerStopped);
+        if (window.api.onServerReady) window.api.onServerReady(onServerReady);
+        if (window.api.onPlayerJoined) window.api.onPlayerJoined(onPlayerJoined);
+        if (window.api.onPlayerLeft) window.api.onPlayerLeft(onPlayerLeft);
+        if (window.api.onServerStats) window.api.onServerStats(onServerStats);
+    }
+}
+
+function sendCommand() {
+    if (DOM.commandInput && DOM.commandInput.value.trim() && STATE.serverRunning) {
+        const cmd = DOM.commandInput.value.trim();
+        window.api.sendCommand(cmd);
+        logToConsole(`> ${cmd}`);
+        DOM.commandInput.value = '';
+    }
+}
+
+function logToConsole(text) {
+    if (!DOM.consoleOutput) return;
+
+    // 1. DÉTECTION INTELLIGENTE :
+    // On calcule si l'utilisateur est déjà tout en bas (avec une marge de 50px)
+    // AVANT d'ajouter le nouveau texte.
+    const isAtBottom = (DOM.consoleOutput.scrollHeight - DOM.consoleOutput.scrollTop - DOM.consoleOutput.clientHeight) < 50;
+
+    const p = document.createElement('p');
+    p.textContent = text;
+
+    // Gestion des couleurs
+    if (text.includes('ERROR') || text.includes('FAILED')) {
+        p.style.color = '#f44336';
+    } else if (text.includes('WARN')) {
+        p.style.color = '#ff9800';
+    } else if (text.includes('INFO')) {
+        p.style.color = '#2196f3';
+    } else if (text.includes('joined')) {
+        p.style.color = '#4caf50';
+    }
+
+    DOM.consoleOutput.appendChild(p);
+
+    // 2. SCROLL CONDITIONNEL :
+    // On ne force la descente QUE si l'utilisateur était déjà en bas.
+    // Sinon, on le laisse lire tranquillement ce qu'il y a plus haut.
+    if (isAtBottom) {
+        DOM.consoleOutput.scrollTop = DOM.consoleOutput.scrollHeight;
+    }
+
+    // Détection "Serveur Prêt"
+    const lowerText = text.toLowerCase();
+    if (!STATE.serverIsReady && (lowerText.includes('done') || lowerText.includes('for help, type'))) {
+        onServerReady();
+    }
+}
+
+/* ========================================
+   ACTIONS GÉNÉRALES
+   ======================================== */
+
+async function browseForFolder() {
+    try {
+        const path = await window.api.selectFolder();
+        if (path) {
+            DOM.serverFolder.value = path;
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function saveServerConfig() {
+    const config = getServerConfig();
+    if (!config.folderPath || !config.name) {
+        showAlert('Erreur', 'Nom et dossier requis');
+        return;
+    }
+    showAlert('Ok', 'Configuration prête.');
+}
 // V REMPLACEZ L'ANCIENNE FONCTION getServerConfig() PAR CELLE-CI V
 function getServerConfig(){ 
     let ram=4,render=8,max=10;
@@ -728,32 +1377,55 @@ function onPlayerLeft(n){ const i=STATE.connectedPlayers.indexOf(n); if(i>-1){ST
 let pcChartInstance = null;
 
 function initializePcChart() {
-    const ctx = document.getElementById('pcPerfChart');
-    if (!ctx) return; // Sécurité si on est pas sur la bonne page
+    const ctxElement = document.getElementById('pcPerfChart');
+    if (!ctxElement) return;
+    
+    // --- CORRECTIF : Nettoyage de l'ancien graphique ---
+    if (window.pcChartInstance instanceof Chart) {
+        window.pcChartInstance.destroy();
+    }
+    // ---------------------------------------------------
 
-    pcChartInstance = new Chart(ctx.getContext('2d'), {
+    const ctx = ctxElement.getContext('2d');
+
+    // Dégradés (Fonctionnent maintenant car le canvas est visible au moment de l'appel)
+    const gradientCpu = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientCpu.addColorStop(0, 'rgba(33, 150, 243, 0.4)');
+    gradientCpu.addColorStop(1, 'rgba(33, 150, 243, 0.0)');
+
+    const gradientRam = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientRam.addColorStop(0, 'rgba(76, 175, 80, 0.4)');
+    gradientRam.addColorStop(1, 'rgba(76, 175, 80, 0.0)');
+
+    // Création (Notez l'utilisation de window.pcChartInstance pour être sûr de la portée globale)
+    window.pcChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: Array(60).fill(''), // 60 points (1 minute environ)
+            labels: Array(60).fill(''),
             datasets: [
                 {
                     label: 'CPU (%)',
                     data: Array(60).fill(0),
-                    borderColor: '#2196F3', // Bleu
-                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                    borderColor: '#2196F3',
+                    backgroundColor: gradientCpu,
                     borderWidth: 2,
-                    pointRadius: 0, // Ligne pure sans points
-                    tension: 0.4, // Courbe lisse
-                    fill: true
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y'
                 },
                 {
                     label: 'RAM (MB)',
                     data: Array(60).fill(0),
-                    borderColor: '#4CAF50', // Vert
+                    borderColor: '#4CAF50',
+                    backgroundColor: gradientRam,
                     borderWidth: 2,
                     pointRadius: 0,
+                    pointHoverRadius: 4,
                     tension: 0.4,
-                    yAxisID: 'y_ram' // Axe dédié à droite
+                    fill: true,
+                    yAxisID: 'y_ram'
                 }
             ]
         },
@@ -761,28 +1433,33 @@ function initializePcChart() {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                legend: { display: true, labels: { color: '#ccc' } } 
+            plugins: {
+                legend: { labels: { color: '#ccc', font: { family: 'Segoe UI, sans-serif' } } },
+                tooltip: {
+                    backgroundColor: 'rgba(30, 30, 30, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#ccc',
+                    borderColor: '#444',
+                    borderWidth: 1,
+                    displayColors: true
+                }
             },
             scales: {
-                x: { display: false }, // Pas d'axe temps visible
-                y: { 
-                    beginAtZero: true, 
-                    max: 100, 
-                    grid: { color: '#333' },
-                    ticks: { color: '#aaa' },
+                x: { display: false },
+                y: {
+                    beginAtZero: true, max: 100, position: 'left',
+                    grid: { color: '#333', borderDash: [5, 5] },
+                    ticks: { color: '#2196F3', font: { weight: 'bold' } },
                     title: { display: true, text: 'CPU %', color: '#2196F3' }
                 },
                 y_ram: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    grid: { drawOnChartArea: false },
-                    ticks: { color: '#4CAF50' },
+                    type: 'linear', display: true, position: 'right',
+                    grid: { display: false },
+                    ticks: { color: '#4CAF50', font: { weight: 'bold' } },
                     title: { display: true, text: 'RAM (MB)', color: '#4CAF50' }
                 }
             },
-            animation: { duration: 0 } // Désactiver l'animation pour fluidité temps réel
+            animation: { duration: 0 }
         }
     });
 }
@@ -796,7 +1473,7 @@ setTimeout(initializePcChart, 500);
  * Met à jour les valeurs CPU/RAM (Texte + Graphique).
  */
 function onServerStats(stats) {
-    // 1. Mise à jour des textes (Dashboard)
+    // 1. Mise à jour des textes en temps réel (Dashboard)
     if (DOM.statCpu) DOM.statCpu.textContent = `${stats.cpu.toFixed(1)}%`;
     
     if (DOM.statRam) {
@@ -807,19 +1484,40 @@ function onServerStats(stats) {
         }
     }
 
-    // 2. Mise à jour du Graphique
-    if (pcChartInstance) {
-        const cpuData = pcChartInstance.data.datasets[0].data;
-        const ramData = pcChartInstance.data.datasets[1].data;
+    // 2. CALCUL DES MOYENNES (Correctement intégré)
+    // On ne calcule que si le serveur est marqué comme "running" dans le STATE
+    if (STATE.serverRunning) {
+        STATE.statsSum.count++;
+        STATE.statsSum.cpu += stats.cpu;
+        STATE.statsSum.ram += stats.memory;
 
-        // On décale tout vers la gauche (supprime le vieux, ajoute le neuf)
+        const avgCpu = STATE.statsSum.cpu / STATE.statsSum.count;
+        const avgRam = STATE.statsSum.ram / STATE.statsSum.count;
+
+        const elCpu = document.getElementById('avg-cpu-display');
+        const elRam = document.getElementById('avg-ram-display');
+
+        if (elCpu) elCpu.textContent = `${avgCpu.toFixed(1)}%`;
+        if (elRam) {
+            if (avgRam > 1024) elRam.textContent = `${(avgRam / 1024).toFixed(2)} GB`;
+            else elRam.textContent = `${avgRam.toFixed(0)} MB`;
+        }
+    }
+
+    // 3. Mise à jour du Graphique (Utilisation de window.pcChartInstance)
+    if (window.pcChartInstance) {
+        const cpuData = window.pcChartInstance.data.datasets[0].data;
+        const ramData = window.pcChartInstance.data.datasets[1].data;
+
+        // On décale les données vers la gauche
         cpuData.shift();
         cpuData.push(stats.cpu);
 
         ramData.shift();
         ramData.push(stats.memory);
 
-        pcChartInstance.update();
+        // On rafraîchit le graphique sans animation pour la fluidité
+        window.pcChartInstance.update('none'); 
     }
 }
 
@@ -1269,42 +1967,146 @@ async function loadServerProperties() {
 /**
  * Génère le formulaire HTML dynamiquement à partir de l'objet de propriétés.
  */
+/**
+ * Génère le formulaire HTML avancé pour server.properties
+ */
 function renderPropertiesForm(props) {
-    DOM.propertiesEditorContainer.innerHTML = '';
+    const container = document.getElementById('properties-editor-container');
+    container.innerHTML = '';
+
+    // --- CONFIGURATION DU TRI ---
     
-    // Trie les clés par ordre alphabétique pour un affichage cohérent
-    const sortedKeys = Object.keys(props).sort();
+    // 1. Les options "VIP" (Celles qu'on veut voir en haut, bien présentées)
+    const priorityKeys = {
+        'Gameplay & Accès': [
+            { key: 'motd', label: 'Description (MOTD)', type: 'text' },
+            { key: 'max-players', label: 'Joueurs Max (Slots)', type: 'number' },
+            { key: 'gamemode', label: 'Mode de jeu par défaut', type: 'select', options: ['survival', 'creative', 'adventure', 'spectator'] },
+            { key: 'difficulty', label: 'Difficulté', type: 'select', options: ['peaceful', 'easy', 'normal', 'hard'] },
+            { key: 'white-list', label: 'Activer la Whitelist', type: 'switch' },
+            { key: 'online-mode', label: 'Mode Online (Premium)', type: 'switch' },
+            { key: 'allow-flight', label: 'Autoriser le vol', type: 'switch' },
+            { key: 'pvp', label: 'Combat (PVP)', type: 'switch' },
+            { key: 'hardcore', label: 'Mode Hardcore (Mort = Ban)', type: 'switch' }
+        ],
+        'Monde & Génération': [
+            { key: 'level-seed', label: 'Graine (Seed)', type: 'text', placeholder: 'Laisser vide pour aléatoire' },
+            { key: 'level-name', label: 'Nom du dossier monde', type: 'text' },
+            { key: 'generate-structures', label: 'Générer Structures (Villages...)', type: 'switch' },
+            { key: 'spawn-protection', label: 'Protection du Spawn (rayon)', type: 'number' }
+        ],
+        'Performances & Réseau': [
+            { key: 'view-distance', label: 'Distance de vue (Chunks)', type: 'number', min: 2, max: 32 },
+            { key: 'simulation-distance', label: 'Distance de simulation', type: 'number', min: 2, max: 32 },
+            { key: 'server-port', label: 'Port du Serveur', type: 'number' },
+            { key: 'server-ip', label: 'IP Spécifique (Laisser vide)', type: 'text' }
+        ]
+    };
 
-    sortedKeys.forEach(key => {
-        const value = props[key];
-        let inputHtml = '';
+    // Copie des props pour savoir ce qu'il reste à la fin (les options avancées)
+    const remainingProps = { ...props };
 
-        // Détecte le type de valeur pour générer le bon champ
-        if (value === 'true' || value === 'false') {
-            // Booléen -> Select (true/false)
-            inputHtml = `
-                <select class="styled-input" data-key="${key}">
-                    <option value="true" ${value === 'true' ? 'selected' : ''}>true</option>
-                    <option value="false" ${value === 'false' ? 'selected' : ''}>false</option>
-                </select>`;
-        } else if (!isNaN(Number(value)) && value.trim() !== '' && !key.includes('port') && !key.includes('id') && !key.includes('seed')) {
-            // Nombre -> Input type "number" (sauf pour les ports/seeds)
-            inputHtml = `<input type="number" class="styled-input" data-key="${key}" value="${value}">`;
-        } else {
-            // Texte -> Input type "text"
-            // On utilise escapeHTML pour les valeurs (ex: le motd peut contenir des ")
-            inputHtml = `<input type="text" class="styled-input" data-key="${key}" value="${escapeHTML(value)}">`;
-        }
+    // --- GÉNÉRATION DES SECTIONS PRIORITAIRES ---
+
+    for (const [sectionName, fields] of Object.entries(priorityKeys)) {
+        // Titre de section
+        const title = document.createElement('div');
+        title.className = 'prop-section-title';
+        title.textContent = sectionName;
+        container.appendChild(title);
+
+        // Grille pour les champs
+        const grid = document.createElement('div');
+        grid.className = 'prop-grid';
+
+        fields.forEach(field => {
+            // On vérifie si la clé existe dans le fichier, sinon on l'ajoute avec une valeur par défaut
+            let value = remainingProps[field.key];
+            
+            // Si la clé n'existe pas dans le fichier, on met une valeur par défaut (vide ou false)
+            if (value === undefined) value = '';
+
+            // On retire cette clé de la liste des "restants" car on va la traiter ici
+            delete remainingProps[field.key];
+
+            const item = document.createElement('div');
+            item.className = 'prop-row';
+            item.innerHTML = `
+                <label>${field.label} <small style="opacity:0.5">(${field.key})</small></label>
+                ${generateInputHtml(field.key, value, field)}
+            `;
+            grid.appendChild(item);
+        });
+
+        container.appendChild(grid);
+    }
+
+    // --- GÉNÉRATION DE LA ZONE AVANCÉE (Le reste) ---
+
+    if (Object.keys(remainingProps).length > 0) {
+        const advZone = document.createElement('div');
+        advZone.className = 'prop-advanced-zone';
         
-        // Crée l'élément de ligne
-        const row = document.createElement('div');
-        row.className = 'property-item-row';
-        row.innerHTML = `
-            <label title="${key}">${key}</label>
-            ${inputHtml}
+        advZone.innerHTML = `
+            <div class="prop-advanced-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                ZONE AVANCÉE / TECHNIQUE - Ne modifiez pas ces valeurs si vous ne savez pas ce que vous faites.
+            </div>
+            <div class="prop-grid" id="advanced-grid"></div>
         `;
-        DOM.propertiesEditorContainer.appendChild(row);
-    });
+        
+        const advGrid = advZone.querySelector('#advanced-grid');
+        
+        // On trie les clés restantes par ordre alphabétique
+        Object.keys(remainingProps).sort().forEach(key => {
+            const value = remainingProps[key];
+            const item = document.createElement('div');
+            item.className = 'prop-row';
+            
+            // Détection automatique simple du type
+            let fieldConfig = { type: 'text' };
+            if (value === 'true' || value === 'false') fieldConfig.type = 'select-bool';
+            
+            item.innerHTML = `
+                <label>${key}</label>
+                ${generateInputHtml(key, value, fieldConfig)}
+            `;
+            advGrid.appendChild(item);
+        });
+
+        container.appendChild(advZone);
+    }
+}
+
+/**
+ * Helper pour créer les inputs HTML
+ */
+function generateInputHtml(key, value, config) {
+    const safeValue = String(value).replace(/"/g, '&quot;');
+    
+    if (config.type === 'switch' || config.type === 'select-bool') {
+        const isChecked = (String(value) === 'true');
+        return `
+            <select class="styled-select" data-key="${key}" style="background-color: var(--bg-primary);">
+                <option value="true" ${isChecked ? 'selected' : ''}>Activé (True)</option>
+                <option value="false" ${!isChecked ? 'selected' : ''}>Désactivé (False)</option>
+            </select>
+        `;
+    }
+    
+    if (config.type === 'select') {
+        const optionsHtml = config.options.map(opt => 
+            `<option value="${opt}" ${String(value) === opt ? 'selected' : ''}>${opt.charAt(0).toUpperCase() + opt.slice(1)}</option>`
+        ).join('');
+        return `<select class="styled-select" data-key="${key}" style="background-color: var(--bg-primary);">${optionsHtml}</select>`;
+    }
+    
+    if (config.type === 'number') {
+        return `<input type="number" class="styled-input" data-key="${key}" value="${safeValue}" style="background-color: var(--bg-primary);">`;
+    }
+
+    // Par défaut : Texte
+    return `<input type="text" class="styled-input" data-key="${key}" value="${safeValue}" placeholder="${config.placeholder || ''}" style="background-color: var(--bg-primary);">`;
 }
 
 /**
@@ -1350,25 +2152,19 @@ async function saveServerProperties() {
 async function performAddonSearch() {
     const query = DOM.addonSearchInput.value.trim();
     if (!query) {
-        showAlert('Recherche', 'Veuillez entrer un terme de recherche.');
+        showAlert('Recherche', 'Veuillez écrire un nom de mod.');
         return;
     }
 
-    // Vérification cruciale : on a besoin de savoir POUR QUEL serveur on cherche
-    if (!DOM.serverFolder.value || !STATE.selectedVersion || !STATE.selectedVersion.id) {
-        showAlert('Erreur', 'Veuillez d\'abord sélectionner un serveur avec une version définie avant de rechercher.');
-        return;
-    }
-
-    // Afficher l'état de chargement
-    DOM.addonResultsList.innerHTML = '<p style="color:#777; text-align:center; padding: 20px;">Recherche en cours...</p>';
+    // Affichage chargement
+    DOM.addonResultsList.innerHTML = '<p style="color:#777; text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Recherche sur Modrinth...</p>';
     DOM.btnAddonSearch.disabled = true;
-    DOM.btnAddonSearch.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-    // Préparer les filtres
+    // --- CORRECTION : On envoie un filtre VIDE pour la version ---
+    // Cela permet de tout trouver (comportement d'avant)
     const filters = {
         type: DOM.addonTypeFilter.value,
-        version: STATE.selectedVersion.id // Ex: "1.21"
+        version: null // On ne filtre plus la version ici !
     };
 
     try {
@@ -1376,13 +2172,12 @@ async function performAddonSearch() {
         if (result.success) {
             renderAddonResults(result.hits);
         } else {
-            throw new Error(result.error);
+            DOM.addonResultsList.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 20px;">Erreur : ${result.error}</p>`;
         }
     } catch (e) {
-        DOM.addonResultsList.innerHTML = `<p style="color:var(--danger-color); text-align:center; padding: 20px;">Erreur: ${e.message}</p>`;
+        DOM.addonResultsList.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 20px;">Erreur : ${e.message}</p>`;
     }
 
-    // Rétablir le bouton
     DOM.btnAddonSearch.disabled = false;
     DOM.btnAddonSearch.innerHTML = '<i class="fas fa-search"></i> Rechercher';
 }

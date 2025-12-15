@@ -1,6 +1,5 @@
 /**
  * MC Server Manager - Main Process
- * Version 2.5.0 - PERFECT MERGE (Fix Downloads + Auto-Clean + Backups)
  */
 
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage } = require('electron');
@@ -12,10 +11,9 @@ const { promisify } = require('util');
 const zlib = require('zlib');
 const extract = require('extract-zip');
 const pidusage = require('pidusage');
-const os = require('os'); // <--- GARDÉ CELUI-CI, SUPPRIMÉ LE DOUBLON
+const os = require('os');
 const { Notification } = require('electron');
 const net = require('net');
-// Promisify zlib.gunzip pour l'utiliser avec async/await
 const gunzip = promisify(zlib.gunzip);
 const QRCode = require('qrcode');
 
@@ -56,6 +54,7 @@ const SERVER_FILES = {
     paper: 'paper-server.jar',
     fabric: 'fabric-server.jar',
     forge: 'forge-installer.jar',
+    neoforge: 'neoforge-installer.jar',
     eula: 'eula.txt',
     properties: 'server.properties'
 };
@@ -285,6 +284,32 @@ async function getForgeDownloadUrl(v) {
                     const json = JSON.parse(d);
                     const fv = json.promos[`${v}-recommended`] || json.promos[`${v}-latest`];
                     resolve(`https://maven.minecraftforge.net/net/minecraftforge/forge/${v}-${fv}/forge-${v}-${fv}-installer.jar`);
+                } catch (e) { reject(e); }
+            });
+        }).on('error', reject);
+    });
+}
+
+async function getNeoForgeDownloadUrl(mcVersion) {
+    return new Promise((resolve, reject) => {
+        // NeoForge utilise un maven. On récupère la liste des versions.
+        https.get('https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge', { headers: { 'User-Agent': 'MC-Manager' } }, (res) => {
+            let d = ''; res.on('data', c => d += c);
+            res.on('end', () => {
+                try {
+                    const json = JSON.parse(d);
+                    // On cherche la dernière version qui correspond à la version Minecraft demandée
+                    // Format NeoForge : XX.Y.ZZ (ex: 20.4.80 pour MC 1.20.4)
+                    const versions = json.versions.reverse(); // Les plus récentes d'abord
+                    
+                    // Logique de matching simple : la version NeoForge commence souvent par les chiffres de la version MC (sauf anciennes versions)
+                    // Pour 1.20.4 -> cherche "20.4"
+                    const mainVer = mcVersion.replace(/^1\./, ''); // 1.20.4 -> 20.4
+                    const match = versions.find(v => v.startsWith(mainVer));
+
+                    if (!match) reject(new Error(`Version NeoForge introuvable pour MC ${mcVersion}`));
+                    
+                    resolve(`https://maven.neoforged.net/releases/net/neoforged/neoforge/${match}/neoforge-${match}-installer.jar`);
                 } catch (e) { reject(e); }
             });
         }).on('error', reject);
@@ -564,6 +589,7 @@ async function handleStartServer(event, config) {
     currentServerName = config.name || path.basename(config.folderPath);
 
     try {
+        // 1. Vérification du Port
         const props = await handleReadServerProperties(null, config.folderPath);
         const port = parseInt(props['server-port'] || config.port || 25565);
         config.port = port; 
@@ -579,26 +605,22 @@ async function handleStartServer(event, config) {
             return;
         }
         sendToConsole(`✅ Port ${port} disponible.`);
-    } catch (e) {
-        sendToConsole(`⚠️ Erreur fatale port: ${e.message}`);
-        sendServerStopped();
-        return;
-    }
 
-    currentServerPath = config.folderPath;
-    clearScheduledTasks(config.folderPath);
-    registerScheduledTasks(config);
-    
-    const eulaPath = path.join(config.folderPath, SERVER_FILES.eula);
-    if (!fs.existsSync(eulaPath)) fs.writeFileSync(eulaPath, 'eula=true');
-    
-    await updateCoreProperties(config.folderPath, config);
-    sendToConsole('✅ Configuration chargée.');
+        // 2. Initialisation
+        currentServerPath = config.folderPath;
+        clearScheduledTasks(config.folderPath);
+        registerScheduledTasks(config);
+        
+        const eulaPath = path.join(config.folderPath, SERVER_FILES.eula);
+        if (!fs.existsSync(eulaPath)) fs.writeFileSync(eulaPath, 'eula=true');
+        
+        await updateCoreProperties(config.folderPath, config);
+        sendToConsole('✅ Configuration chargée.');
 
-    try {
         const javaCmd = config.javaPath || 'java';
         const ram = config.ram;
 
+        // 3. Lancement selon le type
         if (config.type === 'vanilla') {
             const jarPath = path.join(config.folderPath, SERVER_FILES.vanilla);
             if (!fs.existsSync(jarPath)) {
@@ -608,6 +630,7 @@ async function handleStartServer(event, config) {
                 await downloadFile(url, jarPath);
             }
             runJavaServer(config.folderPath, SERVER_FILES.vanilla, ram, config.javaPath);
+
         } else if (config.type === 'paper') {
             const jarPath = path.join(config.folderPath, SERVER_FILES.paper);
             if (!fs.existsSync(jarPath)) {
@@ -617,6 +640,7 @@ async function handleStartServer(event, config) {
                 await downloadFile(url, jarPath);
             }
             runJavaServer(config.folderPath, SERVER_FILES.paper, ram, config.javaPath);
+
         } else if (config.type === 'fabric') {
             const jarPath = path.join(config.folderPath, SERVER_FILES.fabric);
             if (!fs.existsSync(jarPath)) {
@@ -626,6 +650,7 @@ async function handleStartServer(event, config) {
                 await downloadFile(url, jarPath);
             }
             runJavaServer(config.folderPath, SERVER_FILES.fabric, ram, config.javaPath);
+
         } else if (config.type === 'forge') {
             const installerPath = path.join(config.folderPath, SERVER_FILES.forge);
             const runScript = path.join(config.folderPath, process.platform === 'win32' ? 'run.bat' : 'run.sh');
@@ -638,7 +663,7 @@ async function handleStartServer(event, config) {
                     const url = await getForgeDownloadUrl(config.versionId);
                     await downloadFile(url, installerPath);
                 }
-                sendToConsole('Veuillez patienter, installation Forge...');
+                
                 await new Promise((resolve, reject) => {
                     const installProcess = spawn(javaCmd, ['-jar', installerPath, '--installServer'], { cwd: config.folderPath });
                     installProcess.stdout.on('data', (data) => sendToConsole(`[Forge Installer] ${data.toString()}`));
@@ -649,6 +674,38 @@ async function handleStartServer(event, config) {
                             resolve();
                         } else {
                             reject(new Error(`L'installeur Forge a échoué (Code: ${code})`));
+                        }
+                    });
+                });
+            }
+            runForgeScript(config.folderPath, config.ram, config.javaPath);
+
+        } else if (config.type === 'neoforge') {
+            // --- BLOC NEOFORGE ---
+            const installerPath = path.join(config.folderPath, SERVER_FILES.neoforge);
+            const runScript = path.join(config.folderPath, process.platform === 'win32' ? 'run.bat' : 'run.sh');
+
+            if (!fs.existsSync(runScript)) {
+                sendToConsole('🦊 Installation de NeoForge en cours...');
+                if (!fs.existsSync(installerPath)) {
+                    if (!config.versionId) throw new Error("Version MC manquante.");
+                    sendToConsole('📥 Téléchargement (NeoForge Installer)...');
+                    const url = await getNeoForgeDownloadUrl(config.versionId);
+                    await downloadFile(url, installerPath);
+                }
+                
+                sendToConsole('Exécution de l\'installeur (cela peut prendre 1-2 minutes)...');
+                await new Promise((resolve, reject) => {
+                    const installProcess = spawn(javaCmd, ['-jar', installerPath, '--installServer'], { cwd: config.folderPath });
+                    installProcess.stdout.on('data', (data) => sendToConsole(`[NeoInstaller] ${data.toString()}`));
+                    
+                    installProcess.on('close', (code) => {
+                        if (code === 0) {
+                            sendToConsole('✅ Installation NeoForge terminée.');
+                            try { fs.unlinkSync(installerPath); } catch(e) {}
+                            resolve();
+                        } else {
+                            reject(new Error(`L'installeur a échoué (Code: ${code})`));
                         }
                     });
                 });
@@ -685,7 +742,9 @@ function runJavaServer(folderPath, jarFile, ramGB, customJavaPath) {
 
 function runForgeScript(folderPath, ramGB, customJavaPath) {
     const cmd = process.platform === 'win32' ? 'cmd.exe' : 'sh';
-    const args = process.platform === 'win32' ? ['/c', 'run.bat'] : ['run.sh'];
+    const args = process.platform === 'win32'
+    ? ['/c', 'run.bat', 'nogui'] 
+        : ['run.sh', 'nogui'];
     const env = { ...process.env };
     if (customJavaPath) env.JAVA_HOME = path.dirname(path.dirname(customJavaPath));
     
@@ -843,6 +902,10 @@ function setupServerProcessHandlers() {
     let lineBuffer = ''; // <--- C'est la variable qui manquait !
 
     serverProcess.on('error', (error) => { sendToConsole(`❌ Erreur process: ${error.message}`); });
+
+    serverProcess.stdin.on('error', (e) => { 
+        if (e.code !== 'EPIPE') console.error('Erreur stdin:', e);
+    });
     
     serverProcess.stdout.on('data', (data) => {
         const rawChunk = data.toString();
@@ -866,17 +929,22 @@ function setupServerProcessHandlers() {
                 if (line.trim() === '') continue;
                 sendToConsole(line);
                 
-                // Détection Joueurs
-                const joinMatch = line.match(/:\s*(\w+)\s+joined the game/);
-                if (joinMatch) {
-                    if (mainWindow) mainWindow.webContents.send('player-joined', joinMatch[1]);
-                    if (io) io.emit('player-event', { type: 'join', name: joinMatch[1] });
-                }
-                const leaveMatch = line.match(/:\s*(\w+)\s+left the game/);
-                if (leaveMatch) {
-                    if (mainWindow) mainWindow.webContents.send('player-left', leaveMatch[1]);
-                    if (io) io.emit('player-event', { type: 'leave', name: leaveMatch[1] });
-                }
+                // Détection Joueurs (Compatible Geyser/Bedrock)
+// On remplace \w+ par [\w.* ]+ pour accepter les points, étoiles et espaces des noms Bedrock
+const joinMatch = line.match(/:\s*([\w.* ]+)\s+joined the game/);
+if (joinMatch) {
+    // .trim() est ajouté pour nettoyer les espaces éventuels autour du nom
+    const playerName = joinMatch[1].trim(); 
+    if (mainWindow) mainWindow.webContents.send('player-joined', playerName);
+    if (io) io.emit('player-event', { type: 'join', name: playerName });
+}
+
+const leaveMatch = line.match(/:\s*([\w.* ]+)\s+left the game/);
+if (leaveMatch) {
+    const playerName = leaveMatch[1].trim();
+    if (mainWindow) mainWindow.webContents.send('player-left', playerName);
+    if (io) io.emit('player-event', { type: 'leave', name: playerName });
+}
             }
         }
     });
@@ -1118,27 +1186,76 @@ function fetchModrinthApi(url) {
 async function handleSearchAddons(event, query, filters) {
     try {
         let facets = [];
-        if (filters.type === 'mod') facets.push(["project_type:mod"]);
-        else if (filters.type === 'plugin') facets.push(["project_type:plugin"]);
-        if (filters.version) facets.push([`versions:${filters.version}`]);
+        
+        // Gestion des types : Mod, Plugin, ou Les deux
+        if (filters.type === 'mod') {
+            facets.push(["project_type:mod"]);
+        } else if (filters.type === 'plugin') {
+            facets.push(["project_type:plugin"]);
+        } else {
+            // "Mods & Plugins" (any) : On demande l'un OU l'autre
+            facets.push(["project_type:mod", "project_type:plugin"]);
+        }
+
+        // Filtre de version si présent
+        if (filters.version) {
+            facets.push([`versions:${filters.version}`]);
+        }
+
         const url = `https://api.modrinth.com/v2/search?query=${encodeURIComponent(query)}&facets=${encodeURIComponent(JSON.stringify(facets))}`;
         const results = await fetchModrinthApi(url);
         return { success: true, hits: results.hits };
-    } catch (e) { return { success: false, error: e.message }; }
+    } catch (e) { 
+        return { success: false, error: e.message }; 
+    }
 }
 
 async function handleDownloadAddon(event, serverPath, projectSlug, gameVersion, loader) {
     try {
+        // 1. On tente de trouver la version exacte compatible
         const vUrl = `https://api.modrinth.com/v2/project/${projectSlug}/version?game_versions=${encodeURIComponent(JSON.stringify([gameVersion]))}&loaders=${encodeURIComponent(JSON.stringify([loader]))}`;
         const versions = await fetchModrinthApi(vUrl);
-        if (!versions || !versions.length) return { success: false, error: 'Aucune version compatible.' };
+
+        // 2. Si aucune version n'est trouvée, on analyse pourquoi
+        if (!versions || !versions.length) {
+            // On récupère les infos générales du projet pour voir ses compatibilités
+            const projectUrl = `https://api.modrinth.com/v2/project/${projectSlug}`;
+            const projectData = await fetchModrinthApi(projectUrl);
+            
+            const supportedLoaders = projectData.loaders || [];
+            const supportedVersions = projectData.game_versions || [];
+
+            // Cas 1 : Le loader (Fabric/Paper/etc) ne correspond pas
+            if (!supportedLoaders.includes(loader)) {
+                // On formate la liste (ex: "paper, spigot")
+                const list = supportedLoaders.map(l => l.charAt(0).toUpperCase() + l.slice(1)).join(', ');
+                return { success: false, error: `Incompatible avec ${loader}. Cet add-on fonctionne uniquement sur : ${list}.` };
+            }
+
+            // Cas 2 : La version du jeu (1.20.1/etc) ne correspond pas
+            if (!supportedVersions.includes(gameVersion)) {
+                return { success: false, error: `Cet add-on n'est pas encore mis à jour pour la version ${gameVersion}.` };
+            }
+
+            return { success: false, error: 'Aucune version compatible trouvée (cause inconnue).' };
+        }
+
+        // 3. Si on a trouvé une version, on procède au téléchargement (Code d'origine)
         const file = versions[0].files.find(f => f.primary) || versions[0].files[0];
-        const destDir = path.join(serverPath, ['paper', 'spigot'].includes(loader) ? 'plugins' : 'mods');
+        
+        // Détection dossier (Mods vs Plugins)
+        const isPlugin = ['paper', 'spigot', 'purpur'].includes(loader);
+        const destDir = path.join(serverPath, isPlugin ? 'plugins' : 'mods');
+        
         ensureDirectoryExists(destDir);
         const destPath = path.join(destDir, file.filename);
+        
         await downloadFile(file.url, destPath);
         return { success: true, fileName: file.filename };
-    } catch (e) { return { success: false, error: e.message }; }
+
+    } catch (e) { 
+        return { success: false, error: e.message }; 
+    }
 }
 
 function checkPortAvailability(port) {
@@ -1457,6 +1574,7 @@ async function handleImportServer(event, folderPath) {
                 const match = file.match(/paper-(\d+\.\d+(\.\d+)?)/);
                 if (match) detectedVersion = match[1];
             } else if (lower.includes('fabric')) detectedType = 'fabric';
+            else if (lower.includes('neoforge')) detectedType = 'neoforge';
             else if (lower.includes('forge')) detectedType = 'forge';
         }
 
@@ -1491,14 +1609,3 @@ function saveAppSettings(settings) {
     } catch (e) { return false; }
 }
 
-// --- HELPERS ADDITIONNELS ---
-async function handleGetWhitelist() { return []; }
-async function handleGetBanlist() { return []; }
-async function handleAddToWhitelist() { return {success:true}; }
-async function handleRemoveFromWhitelist() { return []; }
-async function handleAddBan() { return {success:true}; }
-async function handleRemoveBan() { return []; }
-async function handleGetLogFiles() { return []; }
-async function handleGetLogContent() { return {success:false}; }
-async function handleSearchAddons() { return {success:true, hits:[]}; }
-async function handleDownloadAddon() { return {success:true}; }
