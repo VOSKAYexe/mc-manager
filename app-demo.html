@@ -3,24 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MC Server Manager Demo</title>
-    <!-- On réutilise le CSS de ton application -->
+    <title>MC Server Manager - Démo Interactive</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Style spécifique pour la démo (pour cacher les scrollbars moches dans l'iframe) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        body { overflow: hidden; background-color: #121212; } 
-        /* Petit overlay pour dire que c'est une démo si besoin */
+        /* Styles spécifiques à la démo pour nettoyer l'affichage web */
+        body { overflow: hidden; background-color: #121212; }
+        
+        /* Badge "Mode Démo" */
         .demo-badge {
-            position: fixed; bottom: 10px; right: 10px;
-            background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71;
-            color: #2ecc71; padding: 5px 10px; border-radius: 5px; font-size: 0.8em;
-            pointer-events: none; z-index: 9999;
+            position: fixed; bottom: 20px; right: 20px;
+            background: rgba(46, 204, 113, 0.15); 
+            border: 1px solid #2ecc71;
+            color: #2ecc71; 
+            padding: 8px 15px; 
+            border-radius: 50px; 
+            font-size: 0.8em;
+            font-weight: bold;
+            pointer-events: none; 
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px rgba(46, 204, 113, 0.2);
         }
+
+        /* Désactiver certains curseurs pour montrer que c'est une démo */
+        .disabled-demo { opacity: 0.6; cursor: not-allowed !important; }
     </style>
 </head>
 <body>
-    <div class="demo-badge">INTERACTIVE PREVIEW</div>
+    <div class="demo-badge">✨ INTERACTIVE PREVIEW</div>
 
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -35,64 +48,116 @@
                 <div class="icon-container"><i class="fas fa-chart-line"></i></div>
                 <span class="link-text">Tableau de bord</span>
             </button>
+            
             <button class="nav-btn" data-tab="config">
                 <div class="icon-container"><i class="fas fa-cog"></i></div>
                 <span class="link-text">Configuration</span>
             </button>
+            
             <button class="nav-btn" data-tab="public">
                 <div class="icon-container"><i class="fas fa-globe"></i></div>
                 <span class="link-text">Mode Public</span>
             </button>
+            
             <button class="nav-btn" data-tab="performance">
                 <div class="icon-container"><i class="fas fa-rocket"></i></div>
                 <span class="link-text">Performances</span>
             </button>
+
+            <button class="nav-btn" data-tab="backups">
+                <div class="icon-container"><i class="fas fa-save"></i></div>
+                <span class="link-text">Backups</span>
+            </button>
+            
             <button class="nav-btn" data-tab="players">
                 <div class="icon-container"><i class="fas fa-users"></i></div>
                 <span class="link-text">Joueurs</span>
             </button>
+            
             <button class="nav-btn" data-tab="library">
                 <div class="icon-container"><i class="fas fa-book"></i></div>
                 <span class="link-text">Bibliothèque</span>
             </button>
+
+            <button class="nav-btn" data-tab="settings">
+                <div class="icon-container"><i class="fas fa-sliders-h"></i></div>
+                <span class="link-text">Paramètres</span>
+            </button>
         </div>
 
         <div class="sidebar-bottom">
-            <div class="version-text"><small>v1.0.0 (DEMO)</small></div>
+            <div class="version-text"><small>v1.0.0 (DEMO WEB)</small></div>
         </div>
     </nav>
 
     <main class="content">
-        <!-- DASHBOARD -->
+        
         <section id="dashboard" class="tab-content active">
             <h2>Tableau de bord</h2>
+            
+            <div class="card" style="display: flex; align-items: center; gap: 20px;">
+                <div id="qrcode-container" style="background: white; padding: 10px; border-radius: 8px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-qrcode" style="color: black; font-size: 2em;"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0 0 5px 0; color: var(--primary-color);">Connexion Mobile</h3>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.9em;">Contrôlez votre serveur depuis votre téléphone.</p>
+                </div>
+            </div>
+
             <div class="info-banner">
                 <span class="info-icon">💡</span>
-                <span><strong>Mode Démo :</strong> Vous pouvez naviguer dans les menus pour tester l'interface.</span>
+                <span><strong>Mode Démo :</strong> Ceci est une simulation de l'interface utilisateur. Aucune action réelle n'est effectuée.</span>
             </div>
             
             <div class="card control-card">
                 <div class="control-card-body">
                     <div class="control-main-col">
                         <div class="status-indicator">
-                            <div class="dot red"></div>
-                            <span>Serveur éteint</span>
+                            <div id="status-dot" class="dot green"></div>
+                            <span id="status-text">En Ligne</span>
                         </div>
                         <div class="input-group">
                             <label>Serveur Actif</label>
-                            <button class="btn-selector" style="cursor: default;">Mon Super Serveur</button>
+                            <button class="btn-selector">
+                                <span style="font-weight: 500;">Survival Season 5</span>
+                                <i class="fas fa-chevron-down" style="font-size: 0.8em; opacity: 0.7;"></i>
+                            </button>
                         </div>
                         <div class="row mt-10">
-                            <button class="btn-primary">LANCER LE SERVEUR</button>
-                            <button class="btn-danger" disabled>ARRÊTER</button>
+                            <button class="btn-primary" disabled style="opacity: 0.5;">LANCER</button>
+                            <button class="btn-danger">ARRÊTER</button>
+                        </div>
+                    </div>
+
+                    <div class="control-stats-col" id="stats-container">
+                        <div class="stat-item">
+                            <span class="stat-label">UTILISATION CPU</span>
+                            <span class="stat-value" id="demo-cpu">12%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">UTILISATION RAM</span>
+                            <span class="stat-value" id="demo-ram">2.4 GB</span>
                         </div>
                     </div>
                 </div> 
             </div>
             
             <div class="console-wrapper">
-                <div class="console-header">Terminal du Serveur</div>
-                <div class="console-output"><p class="log-info">Bienvenue dans la démo de MC Manager !<br>Ceci est une simulation de l'interface.</p></div>
+                <div class="console-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Terminal du Serveur</span>
+                    <button class="btn-small" style="width: auto;"><i class="fas fa-history"></i> Historique</button>
+                </div>
+                <div class="console-output">
+                    <p style="color: #aaa;">[10:22:01 INFO]: Starting minecraft server version 1.20.1</p>
+                    <p style="color: #aaa;">[10:22:01 INFO]: Loading properties</p>
+                    <p style="color: #aaa;">[10:22:02 INFO]: Default game type: SURVIVAL</p>
+                    <p style="color: #aaa;">[10:22:02 INFO]: Generating keypair</p>
+                    <p style="color: #aaa;">[10:22:03 INFO]: Starting Minecraft server on *:25565</p>
+                    <p style="color: #4CAF50;">[10:22:05 INFO]: Done (4.120s)! For help, type "help"</p>
+                    <p style="color: #aaa;">[10:23:45 INFO]: Player Voskay joined the game</p>
+                    <p style="color: #aaa;">[10:24:12 INFO]: <Voskay> Salut ! C'est fluide cette interface.</p>
+                </div>
                 <div class="console-input-area">
                     <input type="text" placeholder="Entrer une commande..." disabled>
                     <button disabled>Envoyer</button>
@@ -100,122 +165,298 @@
             </div>
         </section>
 
-        <!-- CONFIG -->
         <section id="config" class="tab-content">
             <h2>Configuration</h2>
             <div class="card">
                 <div class="input-group">
+                    <label>Version Minecraft</label>
+                    <div class="version-split-container">
+                        <div class="version-column">
+                            <div class="column-header">Famille</div>
+                            <div class="version-grid-simple">
+                                <div class="v-btn active">1.21</div>
+                                <div class="v-btn">1.20</div>
+                                <div class="v-btn">1.19</div>
+                                <div class="v-btn">1.18</div>
+                                <div class="v-btn">1.17</div>
+                                <div class="v-btn">1.16</div>
+                            </div>
+                        </div>
+                        <div class="version-column expanded">
+                            <div class="column-header">Version Spécifique</div>
+                            <div class="version-grid-simple">
+                                <div class="v-btn active">1.21.1</div>
+                                <div class="v-btn">1.21</div>
+                                <div class="v-btn" style="opacity:0.5">Snapshot...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
                     <label>Type de Serveur</label>
                     <div class="server-type-selector">
-                        <div class="type-btn active"><span class="type-icon">🧊</span><span class="type-name">Vanilla</span></div>
-                        <div class="type-btn"><span class="type-icon">📄</span><span class="type-name">Paper</span></div>
+                        <div class="type-btn"><span class="type-icon">🧊</span><span class="type-name">Vanilla</span></div>
+                        <div class="type-btn active"><span class="type-icon">📄</span><span class="type-name">Paper</span></div>
                         <div class="type-btn"><span class="type-icon">🧵</span><span class="type-name">Fabric</span></div>
+                        <div class="type-btn"><span class="type-icon">⚒️</span><span class="type-name">Forge</span></div>
                     </div>
                 </div>
                 
                 <div class="input-group">
-                    <label>Dossier du Serveur</label>
-                    <div class="row">
-                        <input type="text" class="styled-input" value="C:\Minecraft\Server" readonly>
-                        <button class="btn-secondary" style="width: auto;">Parcourir</button>
+                    <label>Allocation RAM : <span style="color:#4CAF50">6 Go</span></label>
+                    <div class="row row-center">
+                        <input type="range" min="2" max="32" value="6" class="range-slider">
+                        <button class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
                     </div>
                 </div>
 
                 <div class="input-group">
-                    <label>Identité</label>
-                    <input type="text" class="styled-input" value="Mon Serveur Minecraft">
+                    <label>Dossier du Serveur</label>
+                    <div class="row">
+                        <input type="text" class="styled-input" value="C:\Users\Admin\Desktop\MC-Manager\Servers\Survival" readonly>
+                        <button class="btn-secondary" style="width: auto;">Parcourir</button>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- PUBLIC -->
-        <section id="public" class="tab-content">
-            <h2>Mode Public</h2>
-            <div class="card">
-                <div class="input-group">
-                    <label class="switch">
-                        <input type="checkbox" checked onclick="return false;">
-                        <span class="slider"></span>
-                    </label>
-                    <span style="margin-left: 15px;">Activer le mode Public (Online Mode)</span>
-                </div>
-                <div style="margin-top: 20px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 5px;">
-                    <em>Activez ceci pour n'accepter que les comptes officiels Mojang/Microsoft.</em>
-                </div>
-            </div>
-        </section>
-
-        <!-- PERF -->
         <section id="performance" class="tab-content">
-            <h2>Performances</h2>
-            <div class="card">
-                <div class="input-group">
-                    <label>Allocation RAM : <span style="color:#4CAF50">4 Go</span></label>
-                    <input type="range" min="2" max="32" value="4" class="range-slider">
-                </div>
-                <div class="input-group">
-                    <label>Distance de vue : <span style="color:#4CAF50">12 Chunks</span></label>
-                    <input type="range" min="2" max="32" value="12" class="range-slider">
-                </div>
+            <h2>Moniteur de Ressources</h2>
+            <div style="height: 50vh; min-height: 400px; width: 100%; background: var(--bg-secondary); padding: 20px; border-radius: 10px; border: 1px solid var(--border-primary); position: relative;">
+                <canvas id="pcPerfChart"></canvas>
+            </div>
+            <div class="info-banner" style="margin-top: 20px;">
+                <span class="info-icon">📊</span>
+                <span>Visualisez la consommation CPU et RAM en temps réel.</span>
             </div>
         </section>
 
-        <!-- PLAYERS -->
         <section id="players" class="tab-content">
             <h2>Gestion des Joueurs</h2>
             <div class="card">
-                <div class="player-list">
-                    <p style="color:#777; text-align:center;">Aucun joueur connecté (Démo).</p>
+                <label>Nombre maximum de joueurs : <span style="color:#4CAF50">20</span></label>
+                <div class="row row-center" style="margin-top: 10px;">
+                    <input type="range" min="1" max="100" value="20" class="range-slider">
+                </div>
+            </div>
+            
+            <div class="card full-height" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                <div class="sub-nav-bar">
+                    <button class="sub-nav-btn active"><i class="fas fa-plug"></i> Connectés</button>
+                    <button class="sub-nav-btn"><i class="fas fa-check-circle"></i> Whitelist</button>
+                    <button class="sub-nav-btn"><i class="fas fa-gavel"></i> Bannis</button>
+                </div>
+
+                <div class="sub-tab-content-container">
+                    <div class="player-list-manager">
+                        <div class="player-list-item-manager">
+                            <div class="player-info">
+                                <span class="player-name">Voskay</span>
+                                <span class="player-meta">UUID: 550e8400-e29b... | Ping: 12ms</span>
+                            </div>
+                            <button class="btn-danger btn-small" style="width:auto;">Kick</button>
+                        </div>
+                        <div class="player-list-item-manager">
+                            <div class="player-info">
+                                <span class="player-name">AlexSteve</span>
+                                <span class="player-meta">UUID: 712b8400-a12c... | Ping: 45ms</span>
+                            </div>
+                            <button class="btn-danger btn-small" style="width:auto;">Kick</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- LIB -->
         <section id="library" class="tab-content">
             <h2>Mes Serveurs</h2>
             <div class="library-grid">
-                <div class="card" style="padding:15px; border:1px solid #444;">
-                    <h4 style="color:white; margin:0;">Survival 1.21</h4>
-                    <p style="color:#aaa; font-size:0.8em;">Vanilla • 4GB RAM</p>
-                    <button class="btn-secondary" style="margin-top:10px; width:100%;">Charger</button>
+                <div class="lib-item">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <h4 style="margin:0; color:var(--primary-color);">Survival Season 5</h4>
+                        <span style="font-size:0.8em; background:#4CAF50; color:white; padding:2px 6px; border-radius:4px;">ACTIF</span>
+                    </div>
+                    <p style="margin-bottom:5px;">Paper 1.21.1 • 6GB RAM</p>
+                    <p style="font-size:0.8em; color:#777; margin-bottom:15px;">Dernier lancement: Aujourd'hui</p>
+                    <div class="lib-actions">
+                        <button class="btn-primary btn-small" disabled>Chargé</button>
+                        <button class="btn-secondary btn-small">Config</button>
+                    </div>
                 </div>
-                <div class="card" style="padding:15px; border:1px solid #444;">
-                    <h4 style="color:white; margin:0;">Modded War</h4>
-                    <p style="color:#aaa; font-size:0.8em;">Forge • 8GB RAM</p>
-                    <button class="btn-secondary" style="margin-top:10px; width:100%;">Charger</button>
+                <div class="lib-item">
+                    <h4 style="margin:0 0 10px 0; color:white;">Modpack Create</h4>
+                    <p style="margin-bottom:5px;">Forge 1.20.1 • 8GB RAM</p>
+                    <p style="font-size:0.8em; color:#777; margin-bottom:15px;">Dernier lancement: Hier</p>
+                    <div class="lib-actions">
+                        <button class="btn-secondary btn-small">Charger</button>
+                        <button class="btn-secondary btn-small">Editer</button>
+                    </div>
+                </div>
+                <div class="lib-item">
+                    <h4 style="margin:0 0 10px 0; color:white;">Tests Redstone</h4>
+                    <p style="margin-bottom:5px;">Vanilla 1.21 • 2GB RAM</p>
+                    <p style="font-size:0.8em; color:#777; margin-bottom:15px;">Dernier lancement: Il y a 5 jours</p>
+                    <div class="lib-actions">
+                        <button class="btn-secondary btn-small">Charger</button>
+                        <button class="btn-secondary btn-small">Editer</button>
+                    </div>
                 </div>
             </div>
         </section>
+        
+        <section id="settings" class="tab-content">
+            <h2>Paramètres</h2>
+            <div class="card">
+                <div class="input-group">
+                    <label>Couleur du Thème</label>
+                    <div class="color-picker-row" id="theme-selector" style="display:flex; gap:10px;">
+                        <div class="theme-dot selected" style="background: #4CAF50;"></div>
+                        <div class="theme-dot" style="background: #2196F3;"></div>
+                        <div class="theme-dot" style="background: #9C27B0;"></div>
+                        <div class="theme-dot" style="background: #FF9800;"></div>
+                        <div class="theme-dot" style="background: #f44336;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
-    <!-- LE SCRIPT MAGIQUE POUR SIMULER LA NAVIGATION -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 1. Gestion des Onglets (Navigation) ---
             const navBtns = document.querySelectorAll('.nav-btn');
             const tabs = document.querySelectorAll('.tab-content');
 
-            // Logique de navigation (Onglets)
             navBtns.forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    // Désactiver tous les onglets
+                    const tabId = btn.getAttribute('data-tab');
+                    if(!tabId) return; // Si bouton sans data-tab (ex: réduire)
+
+                    // Reset classes
                     navBtns.forEach(b => b.classList.remove('active'));
                     tabs.forEach(t => t.classList.remove('active'));
 
-                    // Activer l'onglet cliqué
+                    // Activate
                     btn.classList.add('active');
-                    const tabId = btn.getAttribute('data-tab');
-                    const targetTab = document.getElementById(tabId);
-                    if(targetTab) targetTab.classList.add('active');
+                    const target = document.getElementById(tabId);
+                    if(target) target.classList.add('active');
                 });
             });
 
-            // Désactiver les interactions réelles (inputs, boutons d'action)
-            // On laisse les sliders bouger pour le fun, mais les boutons ne font rien
-            document.querySelectorAll('button:not(.nav-btn)').forEach(btn => {
+            // --- 2. Simulation des sélections visuelles (Boutons version, type...) ---
+            // Pour les boutons qui ont une classe 'active'
+            const selectors = ['.type-btn', '.v-btn', '.sub-nav-btn', '.theme-dot'];
+            selectors.forEach(selector => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(el => {
+                    el.addEventListener('click', function() {
+                        // Trouve les frères et soeurs
+                        const siblings = this.parentElement.children;
+                        for (let sibling of siblings) {
+                            sibling.classList.remove('active', 'selected');
+                        }
+                        // Active celui cliqué
+                        this.classList.add(selector === '.theme-dot' ? 'selected' : 'active');
+                        
+                        // Si c'est un thème, on change la couleur css
+                        if(selector === '.theme-dot') {
+                            const color = this.style.background;
+                            document.documentElement.style.setProperty('--primary-color', color);
+                        }
+                    });
+                });
+            });
+
+            // --- 3. Simulation des Sliders ---
+            const ranges = document.querySelectorAll('input[type="range"]');
+            ranges.forEach(range => {
+                range.addEventListener('input', (e) => {
+                    // Cherche le label précédent pour mettre à jour le texte (Go ou Joueurs)
+                    const labelSpan = range.parentElement.parentElement.querySelector('label span');
+                    if(labelSpan) {
+                        const val = e.target.value;
+                        // Si le max est 32, c'est de la RAM, sinon joueurs
+                        if(range.max == "32") labelSpan.innerText = val + " Go";
+                        else labelSpan.innerText = val;
+                    }
+                });
+            });
+
+            // --- 4. Simulation du Graphique de Performance (Chart.js) ---
+            const ctx = document.getElementById('pcPerfChart').getContext('2d');
+            const perfChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(20).fill(''),
+                    datasets: [
+                        {
+                            label: 'CPU (%)',
+                            data: Array(20).fill(10),
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'RAM (GB)',
+                            data: Array(20).fill(2),
+                            borderColor: '#2196F3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#333' } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#fff' } }
+                    }
+                }
+            });
+
+            // Boucle d'animation pour faire "vivre" le graphique et les stats
+            setInterval(() => {
+                // Valeurs aléatoires
+                const newCpu = Math.floor(Math.random() * (20 - 5 + 1) + 5); // Entre 5 et 20%
+                const newRam = (2.2 + Math.random() * 0.2).toFixed(1); // Autour de 2.3 GB
+
+                // Mise à jour du texte
+                const cpuText = document.getElementById('demo-cpu');
+                const ramText = document.getElementById('demo-ram');
+                if(cpuText) cpuText.innerText = newCpu + "%";
+                if(ramText) ramText.innerText = newRam + " GB";
+
+                // Mise à jour du graphique si l'onglet perf est visible
+                if(document.getElementById('performance').classList.contains('active')) {
+                    const dataCpu = perfChart.data.datasets[0].data;
+                    const dataRam = perfChart.data.datasets[1].data;
+
+                    dataCpu.shift(); dataCpu.push(newCpu);
+                    dataRam.shift(); dataRam.push(newRam);
+                    perfChart.update('none'); // Update sans animation complète
+                }
+            }, 1000);
+
+            // --- 5. Bloquer les boutons par défaut pour ne pas refresh ---
+            document.querySelectorAll('button').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    // Petit effet visuel au clic
+                    // Si ce n'est pas un bouton de navigation, on empêche l'action
+                    if(!btn.classList.contains('nav-btn')) {
+                        e.preventDefault();
+                    }
+                    // Effet visuel clic
                     btn.style.transform = "scale(0.95)";
                     setTimeout(() => btn.style.transform = "scale(1)", 100);
                 });
