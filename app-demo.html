@@ -3,42 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MC Server Manager - Démo Interactive</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>MC Server Manager - Démo</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <style>
-        /* Styles spécifiques à la démo pour nettoyer l'affichage web */
-        body { overflow: hidden; background-color: #121212; }
+        /* ==========================================================================
+           INTEGRATION STRICTE DE STYLES.CSS (COPIE CONFORME)
+           ========================================================================== */
         
-        /* Badge "Mode Démo" */
-        .demo-badge {
-            position: fixed; bottom: 20px; right: 20px;
-            background: rgba(46, 204, 113, 0.15); 
-            border: 1px solid #2ecc71;
-            color: #2ecc71; 
-            padding: 8px 15px; 
-            border-radius: 50px; 
-            font-size: 0.8em;
-            font-weight: bold;
-            pointer-events: none; 
-            z-index: 9999;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 0 15px rgba(46, 204, 113, 0.2);
+        :root {
+            /* Primary Colors */
+            --primary-color: #4CAF50;
+            --primary-hover: #45a049;
+            --primary-light: rgba(76, 175, 80, 0.15);
+            --primary-shadow: rgba(76, 175, 80, 0.3);
+            
+            /* Secondary Colors */
+            --secondary-color: #FF9800;
+            --secondary-hover: #F57C00;
+            --danger-color: #d32f2f;
+            --danger-hover: #b71c1c;
+            --discord-color: #5865F2;
+            
+            /* Background Colors */
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #252526;
+            --bg-card: #2c2c2c;
+            --bg-hover: #333333;
+            --bg-active: #383838;
+            
+            /* Text Colors */
+            --text-primary: #e0e0e0;
+            --text-secondary: #aaaaaa;
+            --text-muted: #777777;
+            --text-disabled: #666666;
+            
+            /* Border Colors */
+            --border-primary: #333333;
+            --border-secondary: #444444;
+            
+            /* Layout */
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 80px;
+            --content-padding: 30px;
+            --border-radius: 8px;
+            --border-radius-lg: 10px;
+            
+            /* Z-index Layers */
+            --z-sidebar: 10;
+            --z-modal: 100;
         }
 
-        /* Désactiver certains curseurs pour montrer que c'est une démo */
-        .disabled-demo { opacity: 0.6; cursor: not-allowed !important; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-secondary); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666; }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-secondary);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+            transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: var(--z-sidebar);
+            padding: 20px 0;
+            flex-shrink: 0;
+        }
+        .sidebar.collapsed { width: var(--sidebar-collapsed); }
+        .sidebar-header { height: 60px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; padding: 0 10px; overflow: hidden; }
+        .brand-container { display: flex; align-items: center; gap: 12px; width: 100%; justify-content: flex-start; transition: all 0.3s ease; }
+        .sidebar.collapsed .brand-container { justify-content: center; padding: 0; }
+        .app-logo { height: 40px; width: 40px; object-fit: contain; flex-shrink: 0; }
+        .brand-text { color: var(--primary-color); font-size: 1.4em; font-weight: bold; white-space: nowrap; opacity: 1; transition: opacity 0.2s; }
+        .sidebar.collapsed .brand-text { opacity: 0; pointer-events: none; display: none; }
+
+        .nav-links { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 0 10px; overflow-y: auto; overflow-x: hidden; }
+        .nav-btn { background: transparent; color: var(--text-secondary); border: none; height: 50px; width: 100%; font-size: 1em; cursor: pointer; border-radius: var(--border-radius); transition: all 0.2s ease; display: flex; align-items: center; justify-content: flex-start; padding: 0 15px; }
+        .nav-btn:hover { background-color: var(--bg-card); color: var(--text-primary); transform: translateX(2px); }
+        .nav-btn.active { background: var(--primary-color); color: white; font-weight: 600; box-shadow: 0 2px 8px var(--primary-shadow); }
+        
+        .icon-container { width: 30px; height: 30px; display: grid; place-items: center; flex-shrink: 0; margin-right: 15px; line-height: 0; font-size: 1.2em; }
+        .icon-container i, .icon-container svg, .icon-container span { display: block; width: auto; height: auto; line-height: 1; text-align: center; }
+        .link-text { white-space: nowrap; opacity: 1; transition: opacity 0.2s; text-align: left; flex: 1; }
+
+        .sidebar.collapsed .nav-links { padding: 0 10px; }
+        .sidebar.collapsed .nav-btn { justify-content: center; padding: 0; transform: none !important; }
+        .sidebar.collapsed .icon-container { margin-right: 0; font-size: 1.4em; }
+        .sidebar.collapsed .link-text { display: none; opacity: 0; }
+
+        .sidebar-bottom { margin-top: auto; padding: 0 10px; margin-bottom: 10px; }
+        .toggle-btn { background: transparent; border: none; color: var(--text-disabled); height: 50px; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; padding: 0 15px; border-radius: var(--border-radius); transition: 0.2s; }
+        .toggle-btn:hover { background-color: var(--bg-card); color: var(--text-primary); }
+        .toggle-btn .icon-container { margin-right: 15px; }
+        .sidebar.collapsed .toggle-btn { justify-content: center; padding: 0; }
+        .sidebar.collapsed .toggle-btn .icon-container { margin-right: 0; }
+        .toggle-icon { transition: transform 0.3s ease; display: block; }
+        .sidebar.collapsed .toggle-icon { transform: rotate(180deg); }
+        .version-text { text-align: center; color: var(--border-secondary); font-size: 0.75em; margin-top: 10px; white-space: nowrap; overflow: hidden; }
+        .sidebar.collapsed .version-text { display: none; }
+
+        /* CONTENT */
+        .content { flex: 1; padding: var(--content-padding); overflow-y: auto; background-color: var(--bg-primary); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* TYPOGRAPHY & FORMS */
+        h2 { margin-top: 0; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-primary); font-size: 1.8em; font-weight: 600; }
+        h3 { font-size: 1.3em; margin-bottom: 15px; font-weight: 600; }
+        p { line-height: 1.6; margin-bottom: 10px; }
+        label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-weight: 500; }
+        
+        .styled-input, .styled-select, input[type="number"], input[type="text"], input[type="password"] { width: 100%; padding: 12px; background-color: var(--bg-card); border: 1px solid var(--border-secondary); border-radius: 5px; color: var(--text-primary); font-size: 1em; outline: none; transition: border-color 0.2s; }
+        .styled-input:focus, .styled-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-light); }
+        
+        .styled-select { appearance: none; width: 100%; padding: 12px 20px; font-size: 1em; font-family: inherit; color: var(--text-primary); cursor: pointer; background-color: var(--bg-tertiary); border: 2px solid var(--border-secondary); border-radius: 8px; transition: all 0.3s; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%234CAF50%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px center; background-size: 12px; padding-right: 40px; }
+        .styled-select:hover { border-color: var(--primary-color); background-color: var(--bg-hover); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+
+        .input-group { margin-bottom: 20px; }
+        .row { display: flex; gap: 10px; align-items: center; }
+        .row-center { align-items: center; }
+        .mt-10 { margin-top: 10px; }
+        .mt-20 { margin-top: 20px; }
+
+        /* BUTTONS */
+        .btn, button { font-family: inherit; }
+        .btn-primary, .btn-secondary, .btn-danger, #btn-start, #btn-stop, #btn-create-backup { padding: 12px 24px; font-size: 0.95em; font-weight: 700; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        
+        .btn-primary, #btn-start { background: linear-gradient(135deg, var(--primary-color), #388E3C); color: white; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3); width: 100%; }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5); }
+        
+        .btn-danger, #btn-stop { background: linear-gradient(135deg, #f44336, #d32f2f); color: white; box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3); width: 100%; }
+        .btn-danger:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(244, 67, 54, 0.5); }
+        
+        .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-secondary); width: auto; }
+        .btn-secondary:hover { background: var(--bg-hover); border-color: var(--text-secondary); }
+        
+        .btn-small { padding: 6px 12px; font-size: 0.85em; background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-secondary); border-radius: 4px; cursor: pointer; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        /* CARDS & UI */
+        .card { background-color: var(--bg-secondary); padding: 25px; border-radius: var(--border-radius-lg); border: 1px solid var(--border-primary); margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .status-indicator { display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px; background: #000; border-radius: 20px; border: 1px solid var(--border-primary); margin-bottom: 20px; font-weight: 600; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.red { background-color: #f44336; box-shadow: 0 0 8px #f44336; }
+        .dot.green { background-color: #4CAF50; box-shadow: 0 0 8px #4CAF50; }
+        
+        .console-wrapper { display: flex; flex-direction: column; height: 400px; border: 1px solid var(--border-primary); border-radius: var(--border-radius); overflow: hidden; margin-top: 20px; }
+        .console-header { background: var(--bg-hover); padding: 8px 15px; font-size: 0.9em; font-family: monospace; border-bottom: 1px solid var(--border-primary); color: var(--text-secondary); }
+        .console-output { flex: 1; background: #0a0a0a; padding: 15px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 0.9em; color: #ccc; }
+        .console-input-area { display: flex; border-top: 1px solid var(--border-primary); }
+        #command-input { flex: 1; border: none; background: var(--bg-secondary); padding: 12px; color: white; font-family: monospace; }
+        #btn-send { border-radius: 0; width: 100px; background: var(--bg-tertiary); border-left: 1px solid var(--border-primary); color: var(--text-primary); }
+
+        /* VERSION & SELECTORS */
+        .version-grid-simple { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; overflow-y: auto; padding-right: 5px; align-content: start; height: 100%; }
+        .v-btn { background: var(--bg-card); border: 1px solid var(--border-secondary); color: var(--text-secondary); padding: 8px 5px; border-radius: 4px; font-size: 0.9em; cursor: pointer; text-align: center; transition: all 0.2s; user-select: none; }
+        .v-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--text-secondary); }
+        .v-btn.active { background: var(--primary-light); border-color: var(--primary-color); color: white; box-shadow: 0 0 8px var(--primary-shadow); font-weight: bold; }
+        
+        .server-type-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px; }
+        .type-btn { background: var(--bg-card); border: 2px solid var(--border-secondary); padding: 15px; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.2s; }
+        .type-btn:hover { transform: translateY(-2px); border-color: var(--text-secondary); }
+        .type-btn.active { border-color: var(--primary-color); background: var(--primary-light); }
+        .type-icon { font-size: 1.8em; display: block; margin-bottom: 5px; }
+
+        /* SLIDERS */
+        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: var(--bg-tertiary); border-radius: 3px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: var(--primary-color); border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        /* MISC COMPONENTS */
+        .btn-selector { width: 100%; padding: 15px 20px; background-color: var(--bg-tertiary); border: 2px solid var(--border-secondary); border-radius: 8px; color: var(--text-primary); font-size: 1em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; text-align: left; }
+        .btn-selector:hover { border-color: var(--primary-color); background-color: var(--bg-hover); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        
+        .info-banner { background: rgba(33, 150, 243, 0.15); border-left: 4px solid #2196F3; padding: 15px; border-radius: 4px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: #bbdefb; }
+        .mod-alert { padding: 15px; background: rgba(255, 152, 0, 0.1); border: 1px solid #FF9800; border-radius: 5px; margin-bottom: 15px; color: #FFE0B2; }
+        
+        .library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .lib-item { background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border-secondary); }
+        
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-tertiary); transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* CONTROL CARD SPLIT */
+        .control-card { padding: 0; }
+        .control-card-body { display: flex; padding: 25px; gap: 20px; }
+        .control-main-col { flex: 1; min-width: 0; }
+        .control-stats-col { flex-basis: 240px; display: flex; flex-direction: column; gap: 15px; padding-top: 32px; }
+        .stat-item { flex: 1; background: var(--bg-tertiary); padding: 15px; border-radius: 6px; text-align: center; border: 1px solid var(--border-secondary); }
+        .stat-label { display: block; font-size: 0.8em; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        .stat-value { display: block; font-size: 1.5em; font-weight: 700; color: var(--primary-color); font-family: monospace; }
+
+        .btn-discord { background-color: var(--discord-color); color: white; border: none; padding: 12px 28px; font-size: 1.1em; font-weight: 600; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .btn-discord:hover { background-color: #7289da; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(88, 101, 242, 0.4); }
+
+        .btn-paypal { padding: 12px 25px; font-size: 1.1em; font-weight: 600; color: #fff; background: linear-gradient(145deg, #0070ba, #005ea6); border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(0, 112, 186, 0.2); }
+        .btn-paypal:hover { background: linear-gradient(145deg, #0079c1, #0069b4); box-shadow: 0 6px 15px rgba(0, 112, 186, 0.3); transform: translateY(-2px); }
+
+        .version-split-container { display: flex; gap: 15px; height: 280px; background: var(--bg-tertiary); border: 1px solid var(--border-secondary); border-radius: 8px; padding: 10px; overflow: hidden; }
+        .version-column { display: flex; flex-direction: column; overflow: hidden; }
+        .version-column:first-child { flex: 1; border-right: 1px solid var(--border-secondary); padding-right: 10px; }
+        .version-column.expanded { flex: 2; }
+        .column-header { font-size: 0.85em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; font-weight: 700; padding-left: 5px; }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 0; padding: 0; }
+            .server-type-selector { grid-template-columns: 1fr 1fr; }
+            .control-card-body { flex-direction: column; }
+            .control-stats-col { padding-top: 0; flex-basis: auto; flex-direction: row; }
+        }
+
+        /* AJOUTS SPECIFIQUES DEMO WEB */
+        .demo-overlay { position: fixed; bottom: 20px; right: 20px; background: rgba(76, 175, 80, 0.2); color: #4CAF50; border: 1px solid #4CAF50; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; font-weight: bold; pointer-events: none; backdrop-filter: blur(5px); z-index: 9999; }
     </style>
 </head>
 <body>
-    <div class="demo-badge">✨ INTERACTIVE PREVIEW</div>
 
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="brand-container">
-                <img src="logo.png" alt="Logo" class="app-logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3767/3767084.png'">
+                <div class="app-logo" style="display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                    <i class="fas fa-cube" style="color: var(--primary-color);"></i>
+                </div>
                 <div class="brand-text">MC MANAGER</div>
             </div>
         </div>
@@ -54,12 +260,7 @@
                 <span class="link-text">Configuration</span>
             </button>
             
-            <button class="nav-btn" data-tab="public">
-                <div class="icon-container"><i class="fas fa-globe"></i></div>
-                <span class="link-text">Mode Public</span>
-            </button>
-            
-            <button class="nav-btn" data-tab="performance">
+            <button class="nav-btn" id="btn-tab-perf" data-tab="performance">
                 <div class="icon-container"><i class="fas fa-rocket"></i></div>
                 <span class="link-text">Performances</span>
             </button>
@@ -74,6 +275,16 @@
                 <span class="link-text">Joueurs</span>
             </button>
             
+            <button class="nav-btn" data-tab="addons">
+                <div class="icon-container"><i class="fas fa-box-open"></i></div>
+                <span class="link-text">Add-ons</span>
+            </button>
+
+            <button class="nav-btn" data-tab="worlds">
+                <div class="icon-container"><i class="fas fa-globe-americas"></i></div>
+                <span class="link-text">Gestion des Mondes</span>
+            </button>
+
             <button class="nav-btn" data-tab="library">
                 <div class="icon-container"><i class="fas fa-book"></i></div>
                 <span class="link-text">Bibliothèque</span>
@@ -83,188 +294,191 @@
                 <div class="icon-container"><i class="fas fa-sliders-h"></i></div>
                 <span class="link-text">Paramètres</span>
             </button>
+            
+            <button class="nav-btn" data-tab="help">
+                <div class="icon-container"><i class="fas fa-question-circle"></i></div>
+                <span class="link-text">Aide</span>
+            </button>
         </div>
 
         <div class="sidebar-bottom">
-            <div class="version-text"><small>v1.0.0 (DEMO WEB)</small></div>
+            <button id="btn-toggle-sidebar" class="toggle-btn">
+                <div class="icon-container"><span class="toggle-icon">◀</span></div>
+                <span class="link-text">Réduire</span>
+            </button>
+            <div class="version-text"><small>v1.0.0 (DEMO)</small></div>
         </div>
     </nav>
 
     <main class="content">
-        
         <section id="dashboard" class="tab-content active">
             <h2>Tableau de bord</h2>
-            
             <div class="card" style="display: flex; align-items: center; gap: 20px;">
                 <div id="qrcode-container" style="background: white; padding: 10px; border-radius: 8px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-qrcode" style="color: black; font-size: 2em;"></i>
+                    <i class="fas fa-qrcode" style="font-size: 2em; color: black;"></i>
                 </div>
                 <div>
                     <h3 style="margin: 0 0 5px 0; color: var(--primary-color);">Connexion Mobile</h3>
-                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.9em;">Contrôlez votre serveur depuis votre téléphone.</p>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 0.9em;">Scannez pour contrôler ce PC</p>
+                    <a id="remote-link" href="#" style="color: var(--text-primary); text-decoration: none; font-family: monospace; font-size: 1.1em; display: block; margin-top: 5px;">https://mc-manager.app/link</a>
                 </div>
             </div>
-
             <div class="info-banner">
                 <span class="info-icon">💡</span>
-                <span><strong>Mode Démo :</strong> Ceci est une simulation de l'interface utilisateur. Aucune action réelle n'est effectuée.</span>
+                <span><strong>Astuce :</strong> Ceci est une démo interactive. Les boutons simulent les actions.</span>
             </div>
             
             <div class="card control-card">
                 <div class="control-card-body">
+                
                     <div class="control-main-col">
                         <div class="status-indicator">
-                            <div id="status-dot" class="dot green"></div>
-                            <span id="status-text">En Ligne</span>
+                            <div id="status-dot" class="dot red"></div>
+                            <span id="status-text">Serveur éteint</span>
                         </div>
                         <div class="input-group">
                             <label>Serveur Actif</label>
-                            <button class="btn-selector">
-                                <span style="font-weight: 500;">Survival Season 5</span>
+                            <button id="btn-open-selector" class="btn-selector">
+                                <span id="current-server-name" style="font-weight: 500;">Survival Season 5</span>
                                 <i class="fas fa-chevron-down" style="font-size: 0.8em; opacity: 0.7;"></i>
                             </button>
                         </div>
                         <div class="row mt-10">
-                            <button class="btn-primary" disabled style="opacity: 0.5;">LANCER</button>
-                            <button class="btn-danger">ARRÊTER</button>
+                            <button id="btn-start" class="btn-primary">LANCER LE SERVEUR</button>
+                            <button id="btn-stop" class="btn-danger" disabled>ARRÊTER</button>
                         </div>
                     </div>
 
                     <div class="control-stats-col" id="stats-container">
                         <div class="stat-item">
                             <span class="stat-label">UTILISATION CPU</span>
-                            <span class="stat-value" id="demo-cpu">12%</span>
+                            <span class="stat-value" id="stat-cpu">0%</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">UTILISATION RAM</span>
-                            <span class="stat-value" id="demo-ram">2.4 GB</span>
+                            <span class="stat-value" id="stat-ram">0 MB</span>
                         </div>
                     </div>
+
                 </div> 
             </div>
             
             <div class="console-wrapper">
                 <div class="console-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <span>Terminal du Serveur</span>
-                    <button class="btn-small" style="width: auto;"><i class="fas fa-history"></i> Historique</button>
+                    <button id="btn-open-log-viewer" class="btn-small" style="width: auto; background-color: var(--bg-card); font-weight: 600;">
+                        <i class="fas fa-history" style="margin-right: 5px;"></i> Historique
+                    </button>
                 </div>
-                <div class="console-output">
-                    <p style="color: #aaa;">[10:22:01 INFO]: Starting minecraft server version 1.20.1</p>
-                    <p style="color: #aaa;">[10:22:01 INFO]: Loading properties</p>
-                    <p style="color: #aaa;">[10:22:02 INFO]: Default game type: SURVIVAL</p>
-                    <p style="color: #aaa;">[10:22:02 INFO]: Generating keypair</p>
-                    <p style="color: #aaa;">[10:22:03 INFO]: Starting Minecraft server on *:25565</p>
-                    <p style="color: #4CAF50;">[10:22:05 INFO]: Done (4.120s)! For help, type "help"</p>
-                    <p style="color: #aaa;">[10:23:45 INFO]: Player Voskay joined the game</p>
-                    <p style="color: #aaa;">[10:24:12 INFO]: <Voskay> Salut ! C'est fluide cette interface.</p>
-                </div>
+                <div id="console-output" class="console-output"><p class="log-info">Prêt à démarrer...</p></div>
                 <div class="console-input-area">
-                    <input type="text" placeholder="Entrer une commande..." disabled>
-                    <button disabled>Envoyer</button>
+                    <input type="text" id="command-input" placeholder="Entrer une commande..." disabled>
+                    <button id="btn-send" disabled>Envoyer</button>
                 </div>
             </div>
         </section>
 
-        <section id="config" class="tab-content">
-            <h2>Configuration</h2>
-            <div class="card">
-                <div class="input-group">
-                    <label>Version Minecraft</label>
-                    <div class="version-split-container">
-                        <div class="version-column">
-                            <div class="column-header">Famille</div>
-                            <div class="version-grid-simple">
-                                <div class="v-btn active">1.21</div>
-                                <div class="v-btn">1.20</div>
-                                <div class="v-btn">1.19</div>
-                                <div class="v-btn">1.18</div>
-                                <div class="v-btn">1.17</div>
-                                <div class="v-btn">1.16</div>
-                            </div>
-                        </div>
-                        <div class="version-column expanded">
-                            <div class="column-header">Version Spécifique</div>
-                            <div class="version-grid-simple">
-                                <div class="v-btn active">1.21.1</div>
-                                <div class="v-btn">1.21</div>
-                                <div class="v-btn" style="opacity:0.5">Snapshot...</div>
-                            </div>
+       <section id="config" class="tab-content">
+        <h2>Configuration</h2>
+        <div class="card">
+            <div class="input-group">
+                <label>Version Minecraft</label>
+                <div class="version-split-container">
+                    <div class="version-column">
+                        <div class="column-header">Famille</div>
+                        <div class="version-grid-simple">
+                            <div class="v-btn active">1.21</div>
+                            <div class="v-btn">1.20</div>
+                            <div class="v-btn">1.19</div>
                         </div>
                     </div>
-                </div>
-
-                <div class="input-group">
-                    <label>Type de Serveur</label>
-                    <div class="server-type-selector">
-                        <div class="type-btn"><span class="type-icon">🧊</span><span class="type-name">Vanilla</span></div>
-                        <div class="type-btn active"><span class="type-icon">📄</span><span class="type-name">Paper</span></div>
-                        <div class="type-btn"><span class="type-icon">🧵</span><span class="type-name">Fabric</span></div>
-                        <div class="type-btn"><span class="type-icon">⚒️</span><span class="type-name">Forge</span></div>
-                    </div>
-                </div>
-                
-                <div class="input-group">
-                    <label>Allocation RAM : <span style="color:#4CAF50">6 Go</span></label>
-                    <div class="row row-center">
-                        <input type="range" min="2" max="32" value="6" class="range-slider">
-                        <button class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label>Dossier du Serveur</label>
-                    <div class="row">
-                        <input type="text" class="styled-input" value="C:\Users\Admin\Desktop\MC-Manager\Servers\Survival" readonly>
-                        <button class="btn-secondary" style="width: auto;">Parcourir</button>
+                    <div class="version-column expanded">
+                        <div class="column-header">Version Spécifique</div>
+                        <div class="version-grid-simple">
+                            <div class="v-btn active">1.21.1</div>
+                            <div class="v-btn">1.21</div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <div class="input-group">
+                <label>Type de Serveur</label>
+                <div class="server-type-selector">
+                    <div class="type-btn active"><span class="type-icon">🧊</span><span class="type-name">Vanilla</span></div>
+                    <div class="type-btn"><span class="type-icon">📄</span><span class="type-name">Paper</span></div>
+                    <div class="type-btn"><span class="type-icon">🧵</span><span class="type-name">Fabric</span></div>
+                    <div class="type-btn"><span class="type-icon">⚒️</span><span class="type-name">Forge</span></div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="ram-slider">Allocation RAM : <span id="ram-display-val" style="color:#4CAF50">4 Go</span></label>
+                <div class="row row-center">
+                    <input type="range" id="ram-slider" min="2" max="32" value="4" step="1" class="range-slider">
+                    <button class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
+                </div>
+            </div>
+            
+            <button class="btn-primary" style="width: 100%; margin-top: 20px;">SAUVEGARDER</button>
+        </div>
         </section>
 
         <section id="performance" class="tab-content">
             <h2>Moniteur de Ressources</h2>
+            
             <div style="height: 50vh; min-height: 400px; width: 100%; background: var(--bg-secondary); padding: 20px; border-radius: 10px; border: 1px solid var(--border-primary); position: relative;">
                 <canvas id="pcPerfChart"></canvas>
             </div>
+
             <div class="info-banner" style="margin-top: 20px;">
                 <span class="info-icon">📊</span>
-                <span>Visualisez la consommation CPU et RAM en temps réel.</span>
+                <span>Ce graphique affiche la consommation CPU et RAM du processus serveur Java en temps réel.</span>
+            </div>
+        </section>
+
+        <section id="backups" class="tab-content">
+            <h2>Gestion des Sauvegardes</h2>
+            <div class="card">
+                <div class="info-banner">
+                    <span class="info-icon">💾</span>
+                    <span>Les backups copient le dossier "world".</span>
+                </div>
+                <div class="row"><button class="btn-primary" style="width: auto;"><i class="fas fa-plus"></i> CRÉER UNE SAUVEGARDE</button></div>
+                <h3 class="mt-20">Historique</h3>
+                <div class="version-container" style="margin-top: 15px;">
+                    <div class="lib-item" style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>Backup Auto</strong><br>
+                            <small style="color: #777;">Aujourd'hui 10:00</small>
+                        </div>
+                        <button class="btn-small">Restaurer</button>
+                    </div>
+                </div>
             </div>
         </section>
 
         <section id="players" class="tab-content">
             <h2>Gestion des Joueurs</h2>
             <div class="card">
-                <label>Nombre maximum de joueurs : <span style="color:#4CAF50">20</span></label>
+                <label for="max-players-slider">
+                    Nombre maximum de joueurs : <span id="max-players-value" style="color:#4CAF50">10</span>
+                </label>
                 <div class="row row-center" style="margin-top: 10px;">
-                    <input type="range" min="1" max="100" value="20" class="range-slider">
+                    <input type="range" id="max-players-slider" min="1" max="100" value="10" class="range-slider">
                 </div>
             </div>
-            
-            <div class="card full-height" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
-                <div class="sub-nav-bar">
-                    <button class="sub-nav-btn active"><i class="fas fa-plug"></i> Connectés</button>
-                    <button class="sub-nav-btn"><i class="fas fa-check-circle"></i> Whitelist</button>
-                    <button class="sub-nav-btn"><i class="fas fa-gavel"></i> Bannis</button>
-                </div>
+            <div class="card">
+                <p>Aucun joueur connecté (Serveur éteint)</p>
+            </div>
+        </section>
 
-                <div class="sub-tab-content-container">
-                    <div class="player-list-manager">
-                        <div class="player-list-item-manager">
-                            <div class="player-info">
-                                <span class="player-name">Voskay</span>
-                                <span class="player-meta">UUID: 550e8400-e29b... | Ping: 12ms</span>
-                            </div>
-                            <button class="btn-danger btn-small" style="width:auto;">Kick</button>
-                        </div>
-                        <div class="player-list-item-manager">
-                            <div class="player-info">
-                                <span class="player-name">AlexSteve</span>
-                                <span class="player-meta">UUID: 712b8400-a12c... | Ping: 45ms</span>
-                            </div>
-                            <button class="btn-danger btn-small" style="width:auto;">Kick</button>
-                        </div>
-                    </div>
+        <section id="addons" class="tab-content">
+            <h2>Add-ons (Mods & Plugins)</h2>
+            <div class="card">
+                <div class="input-group" style="display: flex; gap: 10px;">
+                    <input type="text" class="styled-input" placeholder="Rechercher sur Modrinth (ex: WorldEdit...)">
+                    <button class="btn-primary" style="width: auto; flex-shrink: 0;">Rechercher</button>
                 </div>
             </div>
         </section>
@@ -273,193 +487,208 @@
             <h2>Mes Serveurs</h2>
             <div class="library-grid">
                 <div class="lib-item">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <h4 style="margin:0; color:var(--primary-color);">Survival Season 5</h4>
-                        <span style="font-size:0.8em; background:#4CAF50; color:white; padding:2px 6px; border-radius:4px;">ACTIF</span>
-                    </div>
-                    <p style="margin-bottom:5px;">Paper 1.21.1 • 6GB RAM</p>
-                    <p style="font-size:0.8em; color:#777; margin-bottom:15px;">Dernier lancement: Aujourd'hui</p>
+                    <h4>Survival Season 5</h4>
+                    <p>Paper 1.21.1</p>
                     <div class="lib-actions">
                         <button class="btn-primary btn-small" disabled>Chargé</button>
-                        <button class="btn-secondary btn-small">Config</button>
                     </div>
                 </div>
                 <div class="lib-item">
-                    <h4 style="margin:0 0 10px 0; color:white;">Modpack Create</h4>
-                    <p style="margin-bottom:5px;">Forge 1.20.1 • 8GB RAM</p>
-                    <p style="font-size:0.8em; color:#777; margin-bottom:15px;">Dernier lancement: Hier</p>
+                    <h4>Test Créatif</h4>
+                    <p>Vanilla 1.20</p>
                     <div class="lib-actions">
                         <button class="btn-secondary btn-small">Charger</button>
-                        <button class="btn-secondary btn-small">Editer</button>
-                    </div>
-                </div>
-                <div class="lib-item">
-                    <h4 style="margin:0 0 10px 0; color:white;">Tests Redstone</h4>
-                    <p style="margin-bottom:5px;">Vanilla 1.21 • 2GB RAM</p>
-                    <p style="font-size:0.8em; color:#777; margin-bottom:15px;">Dernier lancement: Il y a 5 jours</p>
-                    <div class="lib-actions">
-                        <button class="btn-secondary btn-small">Charger</button>
-                        <button class="btn-secondary btn-small">Editer</button>
                     </div>
                 </div>
             </div>
         </section>
         
+        <section id="worlds" class="tab-content">
+            <h2>Gestion des Mondes</h2>
+            <div class="card">
+                <p>Gestion des maps, datapacks et resets.</p>
+            </div>
+        </section>
+
         <section id="settings" class="tab-content">
             <h2>Paramètres</h2>
             <div class="card">
-                <div class="input-group">
-                    <label>Couleur du Thème</label>
-                    <div class="color-picker-row" id="theme-selector" style="display:flex; gap:10px;">
-                        <div class="theme-dot selected" style="background: #4CAF50;"></div>
-                        <div class="theme-dot" style="background: #2196F3;"></div>
-                        <div class="theme-dot" style="background: #9C27B0;"></div>
-                        <div class="theme-dot" style="background: #FF9800;"></div>
-                        <div class="theme-dot" style="background: #f44336;"></div>
-                    </div>
+                <label>Couleur du Thème</label>
+                <div class="color-picker-row" style="display:flex; gap:10px;">
+                    <div class="theme-dot selected" style="background: #4CAF50;"></div>
+                    <div class="theme-dot" style="background: #2196F3;"></div>
+                    <div class="theme-dot" style="background: #9C27B0;"></div>
+                    <div class="theme-dot" style="background: #FF9800;"></div>
+                    <div class="theme-dot" style="background: #f44336;"></div>
                 </div>
             </div>
         </section>
 
+        <section id="help" class="tab-content">
+            <h2>Aide</h2>
+            <div class="card" style="text-align: center; padding: 40px;">
+                <h3 style="color: #5865F2;">Besoin d'aide ?</h3>
+                <button class="btn-discord"><i class="fab fa-discord"></i> Discord</button>
+            </div>
+        </section>
     </main>
+
+    <div class="demo-overlay">DEMO VIEW</div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             
-            // --- 1. Gestion des Onglets (Navigation) ---
+            // --- 1. TABS NAVIGATION ---
             const navBtns = document.querySelectorAll('.nav-btn');
             const tabs = document.querySelectorAll('.tab-content');
 
             navBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const tabId = btn.getAttribute('data-tab');
-                    if(!tabId) return; // Si bouton sans data-tab (ex: réduire)
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-tab');
+                    if (!targetId) return;
 
-                    // Reset classes
                     navBtns.forEach(b => b.classList.remove('active'));
                     tabs.forEach(t => t.classList.remove('active'));
 
-                    // Activate
                     btn.classList.add('active');
-                    const target = document.getElementById(tabId);
+                    const target = document.getElementById(targetId);
                     if(target) target.classList.add('active');
                 });
             });
 
-            // --- 2. Simulation des sélections visuelles (Boutons version, type...) ---
-            // Pour les boutons qui ont une classe 'active'
-            const selectors = ['.type-btn', '.v-btn', '.sub-nav-btn', '.theme-dot'];
-            selectors.forEach(selector => {
-                const elements = document.querySelectorAll(selector);
-                elements.forEach(el => {
-                    el.addEventListener('click', function() {
-                        // Trouve les frères et soeurs
-                        const siblings = this.parentElement.children;
-                        for (let sibling of siblings) {
-                            sibling.classList.remove('active', 'selected');
-                        }
-                        // Active celui cliqué
+            // --- 2. SIDEBAR TOGGLE ---
+            const toggleBtn = document.getElementById('btn-toggle-sidebar');
+            const sidebar = document.getElementById('sidebar');
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+            });
+
+            // --- 3. SLIDERS UPDATE ---
+            const ramSlider = document.getElementById('ram-slider');
+            const ramDisplay = document.getElementById('ram-display-val');
+            if(ramSlider && ramDisplay) {
+                ramSlider.addEventListener('input', (e) => ramDisplay.innerText = e.target.value + " Go");
+            }
+
+            const playerSlider = document.getElementById('max-players-slider');
+            const playerDisplay = document.getElementById('max-players-value');
+            if(playerSlider && playerDisplay) {
+                playerSlider.addEventListener('input', (e) => playerDisplay.innerText = e.target.value);
+            }
+
+            // --- 4. VISUAL SELECTION (Type/Version/Theme) ---
+            const selectorGroups = ['.type-btn', '.v-btn', '.theme-dot'];
+            selectorGroups.forEach(selector => {
+                document.querySelectorAll(selector).forEach(item => {
+                    item.addEventListener('click', function() {
+                        const siblings = this.parentElement.querySelectorAll(selector);
+                        siblings.forEach(s => s.classList.remove('active', 'selected'));
                         this.classList.add(selector === '.theme-dot' ? 'selected' : 'active');
-                        
-                        // Si c'est un thème, on change la couleur css
+
+                        // Change primary color dynamically for theme dots
                         if(selector === '.theme-dot') {
-                            const color = this.style.background;
-                            document.documentElement.style.setProperty('--primary-color', color);
+                            document.documentElement.style.setProperty('--primary-color', this.style.background);
                         }
                     });
                 });
             });
 
-            // --- 3. Simulation des Sliders ---
-            const ranges = document.querySelectorAll('input[type="range"]');
-            ranges.forEach(range => {
-                range.addEventListener('input', (e) => {
-                    // Cherche le label précédent pour mettre à jour le texte (Go ou Joueurs)
-                    const labelSpan = range.parentElement.parentElement.querySelector('label span');
-                    if(labelSpan) {
-                        const val = e.target.value;
-                        // Si le max est 32, c'est de la RAM, sinon joueurs
-                        if(range.max == "32") labelSpan.innerText = val + " Go";
-                        else labelSpan.innerText = val;
-                    }
-                });
-            });
+            // --- 5. SERVER SIMULATION (Start/Stop/Logs/Chart) ---
+            let isServerRunning = false;
+            let intervalId = null;
+            const btnStart = document.getElementById('btn-start');
+            const btnStop = document.getElementById('btn-stop');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            const consoleOutput = document.getElementById('console-output');
+            const statCpu = document.getElementById('stat-cpu');
+            const statRam = document.getElementById('stat-ram');
 
-            // --- 4. Simulation du Graphique de Performance (Chart.js) ---
+            // Chart Setup
             const ctx = document.getElementById('pcPerfChart').getContext('2d');
             const perfChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: Array(20).fill(''),
                     datasets: [
-                        {
-                            label: 'CPU (%)',
-                            data: Array(20).fill(10),
-                            borderColor: '#4CAF50',
-                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'RAM (GB)',
-                            data: Array(20).fill(2),
-                            borderColor: '#2196F3',
-                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        }
+                        { label: 'CPU (%)', data: Array(20).fill(0), borderColor: '#4CAF50', backgroundColor: 'rgba(76, 175, 80, 0.1)', fill: true, tension: 0.4, pointRadius: 0 },
+                        { label: 'RAM (GB)', data: Array(20).fill(0), borderColor: '#2196F3', backgroundColor: 'rgba(33, 150, 243, 0.1)', fill: true, tension: 0.4, pointRadius: 0 }
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 0 },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#333' } },
-                        x: { grid: { display: false } }
-                    },
-                    plugins: {
-                        legend: { labels: { color: '#fff' } }
-                    }
+                    responsive: true, maintainAspectRatio: false, animation: false,
+                    plugins: { legend: { labels: { color: '#ccc' } } },
+                    scales: { y: { beginAtZero: true, grid: { color: '#333' } }, x: { display: false } }
                 }
             });
 
-            // Boucle d'animation pour faire "vivre" le graphique et les stats
-            setInterval(() => {
-                // Valeurs aléatoires
-                const newCpu = Math.floor(Math.random() * (20 - 5 + 1) + 5); // Entre 5 et 20%
-                const newRam = (2.2 + Math.random() * 0.2).toFixed(1); // Autour de 2.3 GB
+            function addLog(msg, color='#ccc') {
+                const p = document.createElement('p');
+                p.style.color = color;
+                p.style.margin = '2px 0';
+                p.innerText = `[${new Date().toLocaleTimeString()}] [INFO]: ${msg}`;
+                consoleOutput.appendChild(p);
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
 
-                // Mise à jour du texte
-                const cpuText = document.getElementById('demo-cpu');
-                const ramText = document.getElementById('demo-ram');
-                if(cpuText) cpuText.innerText = newCpu + "%";
-                if(ramText) ramText.innerText = newRam + " GB";
+            btnStart.addEventListener('click', () => {
+                if(isServerRunning) return;
+                isServerRunning = true;
+                btnStart.disabled = true;
+                btnStop.disabled = false;
+                
+                statusDot.className = 'dot orange'; // Loading
+                statusText.innerText = "Démarrage...";
+                addLog("Starting minecraft server version 1.21.1", "#fff");
+                addLog("Loading properties", "#aaa");
 
-                // Mise à jour du graphique si l'onglet perf est visible
-                if(document.getElementById('performance').classList.contains('active')) {
-                    const dataCpu = perfChart.data.datasets[0].data;
-                    const dataRam = perfChart.data.datasets[1].data;
+                setTimeout(() => {
+                    statusDot.className = 'dot green';
+                    statusText.innerText = "En Ligne";
+                    addLog("Done (3.42s)! For help, type \"help\"", "#4CAF50");
+                    
+                    // Start Fake Stats
+                    intervalId = setInterval(() => {
+                        const cpu = Math.floor(Math.random() * 20 + 5);
+                        const ram = (2 + Math.random() * 0.5).toFixed(1);
+                        
+                        statCpu.innerText = cpu + "%";
+                        statRam.innerText = (ram * 1024).toFixed(0) + " MB";
 
-                    dataCpu.shift(); dataCpu.push(newCpu);
-                    dataRam.shift(); dataRam.push(newRam);
-                    perfChart.update('none'); // Update sans animation complète
-                }
-            }, 1000);
+                        if(document.getElementById('performance').classList.contains('active')) {
+                            perfChart.data.datasets[0].data.shift();
+                            perfChart.data.datasets[0].data.push(cpu);
+                            perfChart.data.datasets[1].data.shift();
+                            perfChart.data.datasets[1].data.push(ram);
+                            perfChart.update();
+                        }
+                    }, 1000);
 
-            // --- 5. Bloquer les boutons par défaut pour ne pas refresh ---
-            document.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    // Si ce n'est pas un bouton de navigation, on empêche l'action
-                    if(!btn.classList.contains('nav-btn')) {
-                        e.preventDefault();
-                    }
-                    // Effet visuel clic
-                    btn.style.transform = "scale(0.95)";
-                    setTimeout(() => btn.style.transform = "scale(1)", 100);
-                });
+                }, 2000);
+            });
+
+            btnStop.addEventListener('click', () => {
+                if(!isServerRunning) return;
+                isServerRunning = false;
+                clearInterval(intervalId);
+                btnStart.disabled = false;
+                btnStop.disabled = true;
+                statusDot.className = 'dot red';
+                statusText.innerText = "Serveur éteint";
+                addLog("Stopping server", "#f44336");
+                addLog("Saving chunks for level 'ServerLevel'...", "#aaa");
+                
+                statCpu.innerText = "0%";
+                statRam.innerText = "0 MB";
+                
+                // Reset Chart visually
+                perfChart.data.datasets.forEach(d => d.data.fill(0));
+                perfChart.update();
+            });
+
+            // Prevent forms
+            document.querySelectorAll('button').forEach(b => {
+                b.addEventListener('click', e => e.preventDefault());
             });
         });
     </script>
