@@ -1,10 +1,11 @@
 {
+  {
   "name": "MC Manager",
-  "short_name": "mc-manager-remote",
-  "start_url": "./index.html",
+  "short_name": "MC Manager",
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#121212",
+  "theme_color": "#4CAF50"
   "icons": [
     {
       "src": "icon.png",
@@ -18,3 +19,4 @@
     }
   ]
 }
+
