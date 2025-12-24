@@ -2,629 +2,551 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MC Manager Ultimate</title>
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root {
-            --bg-app: #0f0f0f;
-            --bg-card: #1a1a1a;
-            --bg-glass: rgba(20, 20, 20, 0.95);
             --primary: #4CAF50;
-            --primary-gradient: linear-gradient(135deg, #66bb6a, #43a047);
-            --danger-gradient: linear-gradient(135deg, #ef5350, #c62828);
-            --surface-gradient: linear-gradient(145deg, #222, #181818);
-            --text-main: #ffffff;
-            --text-dim: #888888;
-            --nav-height: 80px;
+            --bg-app: #121212;
+            --bg-card: #1e1e1e;
+            --bg-modal: #252525;
+            --border: #333;
+            --text-main: #e0e0e0;
+            --text-sec: #999;
+            --nav-height: 70px;
+            
+            /* Couleurs Actions */
+            --col-kick: #FF9800;
+            --col-ban: #f44336;
+            --col-op: #2196F3;
+            --col-gm: #9C27B0;
+            --col-kill: #795548;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            margin: 0; padding: 0;
-            font-family: 'Poppins', sans-serif;
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        
+        body, html {
             background-color: var(--bg-app);
             color: var(--text-main);
-            height: 100dvh; /* Fix hauteur mobile */
-            width: 100vw;
-            display: flex; flex-direction: column;
-            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            margin: 0; padding: 0;
+            height: 100%; width: 100%;
+            overflow: hidden; /* Empêche le scroll global */
         }
-
-        /* --- TOASTS (NOTIFICATIONS) --- */
-        #toast-container {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 10000; display: flex; flex-direction: column; gap: 10px;
-            width: 90%; max-width: 400px; pointer-events: none;
-        }
-        .toast {
-            background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px);
-            border-left: 4px solid var(--primary); color: white;
-            padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-            display: flex; align-items: center; gap: 15px;
-            animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: auto; font-size: 0.9rem; font-weight: 500;
-        }
-        .toast.error { border-left-color: #ef5350; }
-        .toast.info { border-left-color: #2196F3; }
-        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fadeOut { to { opacity: 0; transform: translateY(-20px); } }
-
-        /* --- RIPPLE EFFECT --- */
-        .ripple-effect { position: relative; overflow: hidden; }
-        span.ripple {
-            position: absolute; border-radius: 50%; transform: scale(0);
-            animation: ripple 600ms linear; background-color: rgba(255, 255, 255, 0.3);
-            pointer-events: none;
-        }
-        @keyframes ripple { to { transform: scale(4); opacity: 0; } }
 
         /* --- LOGIN --- */
         #login-screen {
             position: fixed; inset: 0; z-index: 9999;
             background: var(--bg-app);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.4s;
         }
-        .pin-input-real {
-            background: transparent; border: none; border-bottom: 2px solid #333;
-            color: white; font-size: 2rem; text-align: center; width: 200px;
-            letter-spacing: 10px; outline: none; margin: 30px 0;
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 30px; }
+        .num-btn {
+            width: 70px; height: 70px; border-radius: 50%; border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+            background: var(--bg-card); transition: 0.1s;
         }
+        .num-btn:active { background: var(--primary); border-color: var(--primary); }
 
-        /* --- APP STRUCTURE --- */
-        #app-ui { display: none; flex-direction: column; height: 100%; width: 100%; }
-
-        header {
-            flex-shrink: 0; height: 60px; padding: 0 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #222;
-        }
-        .brand { font-weight: 800; font-size: 1.2rem; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
-        .brand i { color: var(--primary); }
-        .current-srv-badge { font-size: 0.75rem; background: #333; padding: 4px 10px; border-radius: 12px; color: #ccc; }
-
-        .tab-container {
-            flex: 1; position: relative; overflow: hidden;
-            display: flex; flex-direction: column;
-        }
-
-        .tab-page {
-            display: none; flex-direction: column;
+        /* --- LAYOUT PRINCIPAL --- */
+        #app-ui {
+            display: none; /* Caché tant que pas login */
+            flex-direction: column;
             height: 100%; width: 100%;
         }
-        .tab-page.active { display: flex !important; }
 
-        /* Scrollable Pages */
-        #tab-home, #tab-players, #tab-settings, #tab-tools {
-            overflow-y: auto; padding: 20px;
-            padding-bottom: calc(var(--nav-height) + 40px);
-            gap: 20px;
+        header {
+            height: 60px; padding: 0 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--bg-card); border-bottom: 1px solid var(--border);
+            flex-shrink: 0; /* Ne rétrécit pas */
         }
+        .brand { font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        
+        .tab-container { 
+            flex: 1; 
+            position: relative; 
+            overflow: hidden; 
+        }
+        
+        .tab-page {
+            position: absolute; inset: 0; 
+            display: none; 
+            flex-direction: column;
+            padding: 20px; 
+            padding-bottom: calc(var(--nav-height) + 20px);
+            opacity: 0; transform: translateY(10px); transition: 0.2s;
+            overflow-y: auto; /* Scroll interne par page */
+        }
+        .tab-page.active { display: flex; opacity: 1; transform: translateY(0); }
 
-        /* Console Page (No Scroll) */
-        #tab-console { overflow: hidden; padding-bottom: var(--nav-height); }
-
-        /* --- CONSOLE --- */
-        .console-container {
-            flex: 1; display: flex; flex-direction: column;
-            background: #0a0a0a; overflow: hidden; min-height: 0;
+        /* --- DASHBOARD --- */
+        .status-hero { text-align: center; margin: 20px 0; }
+        .pulse-icon {
+            font-size: 4rem; color: #333; transition: 0.3s;
+            text-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .online .pulse-icon { color: var(--primary); text-shadow: 0 0 30px var(--primary); }
+        .offline .pulse-icon { color: var(--col-ban); }
+        
+        .control-row { display: flex; gap: 15px; margin-top: auto; }
+        .btn-big {
+            flex: 1; padding: 20px; border-radius: 15px; border: none; font-weight: 700; color: white;
+            font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .btn-start { background: var(--primary); }
+        .btn-stop { background: var(--bg-card); border: 2px solid var(--col-ban); color: var(--col-ban); }
+        
+        /* --- TERMINAL (CORRIGÉ) --- */
+        #tab-console { 
+            padding: 0; 
+            background: #000; 
+            flex-direction: column;
+        }
+        .console-wrapper {
+            display: flex; flex-direction: column; 
+            height: 100%; width: 100%;
         }
         #logs {
-            flex: 1; padding: 15px; overflow-y: auto;
-            font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
-            color: #ccc; line-height: 1.4;
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace; 
+            font-size: 0.85rem; 
+            color: #ccc;
+            min-height: 0;
         }
-        .console-input-bar {
-            flex-shrink: 0; padding: 15px;
-            background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex; gap: 12px; align-items: center; z-index: 10;
+        .log-line { margin-bottom: 4px; word-break: break-all; border-left: 2px solid transparent; padding-left: 5px; }
+        .log-line.err { border-left-color: var(--col-ban); color: #ff8a80; }
+        .log-line.info { border-left-color: var(--col-op); color: #82b1ff; }
+        
+        .cmd-bar {
+            padding: 10px; background: #1a1a1a; border-top: 1px solid #333;
+            display: flex; gap: 10px; 
+            padding-bottom: calc(env(safe-area-inset-bottom) + 80px); /* Espace pour la nav bar */
         }
-        #cmd-input {
-            flex: 1; background: #151515; border: 1px solid #333; color: #fff;
-            padding: 12px 20px; border-radius: 25px; outline: none; font-size: 16px;
-            transition: 0.3s;
-        }
-        #cmd-input:focus { border-color: var(--primary); background: #1a1a1a; }
-        .btn-send {
-            width: 48px; height: 48px; border-radius: 50%; border: none;
-            background: var(--primary-gradient); color: white; font-size: 1.2rem;
-            display: flex; justify-content: center; align-items: center;
-            flex-shrink: 0; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        .cmd-input {
+            flex: 1; background: #333; border: none; color: white; padding: 12px 20px;
+            border-radius: 25px; font-family: 'JetBrains Mono'; outline: none;
         }
 
-        /* --- BOTTOM NAV --- */
-        .bottom-nav {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            height: var(--nav-height);
-            background: var(--bg-glass);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex; justify-content: space-around; align-items: center;
-            z-index: 100; padding-bottom: 15px;
+        /* --- PLAYERS --- */
+        .player-tabs { display: flex; background: var(--bg-card); padding: 5px; border-radius: 10px; margin-bottom: 20px; }
+        .p-tab { flex: 1; text-align: center; padding: 10px; border-radius: 8px; font-size: 0.9rem; color: var(--text-sec); transition: 0.2s; }
+        .p-tab.active { background: var(--primary); color: white; font-weight: 600; }
+        
+        .player-list { display: flex; flex-direction: column; gap: 8px; }
+        
+        /* --- MODAL ARSENAL --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
+            display: none; align-items: flex-end; opacity: 0; transition: 0.3s;
         }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--text-dim); width: 100%; height: 100%; gap: 4px;
+        .modal-overlay.active { display: flex; opacity: 1; }
+        
+        .arsenal-sheet {
+            background: var(--bg-modal); width: 100%; border-radius: 25px 25px 0 0;
+            padding: 25px; padding-bottom: 40px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.9, 0.2, 1);
+            max-height: 85vh; overflow-y: auto;
         }
-        .nav-item i { font-size: 1.4rem; transition: 0.2s; }
-        .nav-item span { font-size: 0.7rem; font-weight: 500; }
+        .modal-overlay.active .arsenal-sheet { transform: translateY(0); }
+        
+        .arsenal-title { text-align: center; font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; color: white; }
+        .arsenal-section { margin-bottom: 20px; }
+        .sec-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-sec); margin-bottom: 10px; font-weight: 600; }
+        
+        .arsenal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .a-btn {
+            padding: 15px; border-radius: 12px; border: none; font-weight: 600; color: white;
+            display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem;
+            background: #333; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .a-btn:active { transform: scale(0.97); }
+
+        /* Couleurs Boutons */
+        .btn-kick { background: var(--col-kick); }
+        .btn-ban { background: var(--col-ban); }
+        .btn-unban { background: var(--primary); grid-column: 1 / -1; padding: 20px; font-size: 1.1rem; }
+        
+        .btn-op { background: var(--col-op); }
+        .btn-deop { background: #3f51b5; }
+        
+        .btn-gm-s { background: #4CAF50; }
+        .btn-gm-c { background: #9C27B0; }
+        .btn-gm-sp { background: #607D8B; }
+        .btn-kill { background: var(--col-kill); }
+
+        /* --- NAV BAR --- */
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; height: var(--nav-height);
+            background: rgba(30,30,30,0.95); backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border); display: flex; justify-content: space-around;
+            align-items: center; z-index: 100;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-sec); width: 60px; }
         .nav-item.active { color: var(--primary); }
-        .nav-item.active i { transform: translateY(-2px); }
+        .nav-item i { font-size: 1.3rem; }
+        .nav-item span { font-size: 0.65rem; }
 
-        /* --- COMPONENTS --- */
-        .status-card { background: var(--surface-gradient); padding: 30px; border-radius: 24px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-        .status-ring { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        
-        .btn-big { width: 100%; padding: 18px; border-radius: 16px; border: none; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; }
-        .btn-start { background: var(--primary-gradient); box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3); }
-        .btn-stop { background: var(--danger-gradient); box-shadow: 0 5px 20px rgba(239, 83, 80, 0.3); }
-        .btn-big:disabled { opacity: 0.3; filter: grayscale(1); box-shadow: none; }
-
-        .srv-select-btn { width: 100%; padding: 15px; background: #252525; border: 1px solid #333; border-radius: 12px; margin-bottom: 10px; color: white; text-align: left; display: flex; justify-content: space-between; align-items: center; }
-
-        /* TOOLBOX STYLES */
-        .tool-section h3 { margin: 0 0 10px 5px; font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-        .tool-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
-        .tool-btn { background: #252525; border: 1px solid #333; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; color: white; }
-        .tool-btn i { font-size: 1.8rem; }
-        .t-sun i { color: #FFC107; } .t-rain i { color: #2196F3; } .t-danger i { color: #ef5350; } 
-        .t-heal i { color: #E91E63; } .t-feed i { color: #FF9800; } .t-cmd i { color: #9C27B0; } .t-alert i { color: #FF3D00; }
-        .tool-row { background: #252525; padding: 15px 20px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-
-        /* MODALS */
-        .modal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; padding: 20px; }
-        .modal.active { display: flex; }
-        .modal-content { background: #1e1e1e; width: 100%; max-width: 400px; padding: 25px; border-radius: 20px; max-height: 80vh; overflow-y: auto; }
-        
-        .player-card { background: #222; padding: 10px; border-radius: 12px; text-align: center; }
-        .head-img { width: 48px; border-radius: 8px; margin-bottom: 5px; }
-        
-        .setting-item { background: #222; padding: 20px; border-radius: 16px; margin-bottom: 10px; }
-        input[type=range] { width: 100%; accent-color: var(--primary); height: 4px; background: #444; border-radius: 2px; }
-
-        /* PROPERTIES EDITOR */
-        .prop-search-bar { position: sticky; top: 0; background: #1e1e1e; z-index: 10; padding-bottom: 15px; border-bottom: 1px solid #333; margin-bottom: 15px; }
-        .prop-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 12px; margin-bottom: 10px; }
-        .prop-input { background: #151515; border: 1px solid #444; color: var(--primary); padding: 8px; border-radius: 8px; width: 120px; text-align: right; font-family: monospace; outline: none; }
-        .toggle-switch { position: relative; width: 50px; height: 28px; }
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: #444; transition: .4s; border-radius: 34px; }
-        .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .toggle-slider { background-color: var(--primary); }
-        input:checked + .toggle-slider:before { transform: translateX(22px); }
-
-        .btn-logout { width: 100%; padding: 15px; margin-top: 25px; background: rgba(239, 83, 80, 0.1); border: 1px solid #ef5350; color: #ef5350; border-radius: 16px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; transition: 0.2s; }
-        .btn-logout:active { background: #ef5350; color: white; }
+        #toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: #333; color: white; padding: 12px 25px; border-radius: 30px;
+            font-weight: 600; z-index: 5000; transition: 0.3s; display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+        #toast.visible { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
 
-    <div id="toast-container"></div>
+    <div id="toast"><i class="fas fa-check"></i> <span id="toast-msg">Action</span></div>
 
     <div id="login-screen">
-        <div style="font-size:3rem; color:var(--primary); margin-bottom:10px;"><i class="fas fa-cube"></i></div>
-        <h2>MC Manager</h2>
-        <p style="color:#888; font-size:0.9rem; margin-bottom:30px;">Remote Access</p>
-        <input type="password" id="pin-input" class="pin-input-real" maxlength="4" placeholder="••••" inputmode="numeric">
-        <div id="login-msg" style="margin-top:20px; color:#ff4757; height:20px;"></div>
-        <button onclick="tryLogin()" style="margin-top:20px; background:#333; color:white; border:none; padding:12px 40px; border-radius:30px; font-weight:600; cursor:pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">ENTRER</button>
+        <div style="font-size:3rem; color:var(--primary); margin-bottom:20px;"><i class="fas fa-shield-alt"></i></div>
+        <h2>Accès Sécurisé</h2>
+        <div style="display:flex; gap:10px; margin:20px 0;">
+            <div class="dot" id="d0" style="width:12px;height:12px;border-radius:50%;border:2px solid #555"></div>
+            <div class="dot" id="d1" style="width:12px;height:12px;border-radius:50%;border:2px solid #555"></div>
+            <div class="dot" id="d2" style="width:12px;height:12px;border-radius:50%;border:2px solid #555"></div>
+            <div class="dot" id="d3" style="width:12px;height:12px;border-radius:50%;border:2px solid #555"></div>
+        </div>
+        <div class="numpad">
+            <div class="num-btn" onclick="addPin(1)">1</div><div class="num-btn" onclick="addPin(2)">2</div><div class="num-btn" onclick="addPin(3)">3</div>
+            <div class="num-btn" onclick="addPin(4)">4</div><div class="num-btn" onclick="addPin(5)">5</div><div class="num-btn" onclick="addPin(6)">6</div>
+            <div class="num-btn" onclick="addPin(7)">7</div><div class="num-btn" onclick="addPin(8)">8</div><div class="num-btn" onclick="addPin(9)">9</div>
+            <div class="num-btn" style="opacity:0"></div><div class="num-btn" onclick="addPin(0)">0</div><div class="num-btn" onclick="delPin()"><i class="fas fa-backspace"></i></div>
+        </div>
     </div>
 
     <div id="app-ui">
         <header>
             <div class="brand"><i class="fas fa-cube"></i> MC MANAGER</div>
-            <div id="current-server-display" class="current-srv-badge">Aucun serveur</div>
+            <div onclick="requestServers()" style="font-size:0.8rem; background:#333; padding:5px 10px; border-radius:15px; display:flex; gap:5px; align-items:center;">
+                <span id="srv-name">Serveur</span> <i class="fas fa-caret-down"></i>
+            </div>
         </header>
 
         <div class="tab-container">
-            
             <div id="tab-home" class="tab-page active">
-                <div class="status-card">
-                    <div style="text-transform: uppercase; font-size: 0.8rem; color: #888; margin-bottom: 5px;">État du Serveur</div>
-                    <div id="status-text" style="font-size: 2rem; font-weight: 800; margin-bottom: 5px;">OFFLINE</div>
-                    <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
-                        <div id="status-ring" class="status-ring" style="background: #ef5350; color: #ef5350;"></div>
-                        <span id="status-details" style="font-size: 0.9rem; opacity: 0.7;">Éteint</span>
+                <div class="status-hero offline" id="status-hero">
+                    <i class="fas fa-power-off pulse-icon"></i>
+                    <h1 id="status-text" style="margin-top:10px; font-size:2rem;">OFFLINE</h1>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px;">
+                    <div style="background:var(--bg-card); padding:15px; border-radius:12px; text-align:center; border:1px solid var(--border);">
+                        <div style="color:var(--text-sec); font-size:0.7rem;">MÉMOIRE</div>
+                        <div id="ram-val" style="color:var(--primary); font-weight:700; font-size:1.2rem;">0 MB</div>
+                    </div>
+                    <div style="background:var(--bg-card); padding:15px; border-radius:12px; text-align:center; border:1px solid var(--border);">
+                        <div style="color:var(--text-sec); font-size:0.7rem;">CPU</div>
+                        <div id="cpu-val" style="color:#2196F3; font-weight:700; font-size:1.2rem;">0%</div>
                     </div>
                 </div>
 
-                <button class="srv-select-btn" onclick="openServerList()">
-                    <div>
-                        <div style="font-size:0.8rem; color:#888;">Serveur sélectionné</div>
-                        <div id="srv-btn-name" style="font-weight:600;">Choisir un serveur...</div>
-                    </div>
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-
-                <div class="status-card" style="padding: 15px; margin-top: 0; background: #1a1a1a;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <span style="font-size:0.8rem; color:#aaa;">CPU: <b id="cpu-val" style="color:#2196F3">0%</b></span>
-                        <span style="font-size:0.8rem; color:#aaa;">RAM: <b id="ram-val" style="color:#4CAF50">0 MB</b></span>
-                    </div>
-                    <div style="height: 120px;">
-                        <canvas id="perfChart"></canvas>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: auto; margin-bottom: 10px;">
-                    <button id="btn-start" class="btn-big btn-start" onclick="sendAction('start')"><i class="fas fa-power-off"></i> START</button>
-                    <button id="btn-stop" class="btn-big btn-stop" onclick="sendAction('stop')" disabled><i class="fas fa-stop"></i> STOP</button>
+                <div class="control-row">
+                    <button class="btn-big btn-start" id="btn-start" onclick="action('start')"><i class="fas fa-play"></i> START</button>
+                    <button class="btn-big btn-stop" id="btn-stop" onclick="action('stop')" disabled><i class="fas fa-stop"></i> STOP</button>
                 </div>
             </div>
 
             <div id="tab-console" class="tab-page">
-                <div class="console-container">
-                    <div id="logs"><div>> Console prête.</div></div>
-                    <div class="console-input-bar">
-                        <input type="text" id="cmd-input" placeholder="Commande..." autocomplete="off">
-                        <button class="btn-send" onclick="sendCmd()"><i class="fas fa-paper-plane"></i></button>
+                <div class="console-wrapper">
+                    <div id="logs">
+                        <div style="color:#555; text-align:center; margin-top:20px;">-- Début du flux --</div>
                     </div>
-                </div>
-            </div>
-
-            <div id="tab-tools" class="tab-page">
-                
-                <div class="tool-section">
-                    <h3>Administration</h3>
-                    <div class="tool-grid">
-                        <button class="tool-btn t-alert" onclick="runQuickCmd('/title @a title {&quot;text&quot;:&quot;Redémarrage !&quot;,&quot;color&quot;:&quot;red&quot;}', 'Alerte envoyée')"><i class="fas fa-bullhorn"></i><span>Alerte</span></button>
-                        <button class="tool-btn t-cmd" onclick="clearChat()"><i class="fas fa-eraser"></i><span>Clear Chat</span></button>
-                        <button class="tool-btn t-heal" onclick="runQuickCmd('/effect clear @a', 'Effets retirés')"><i class="fas fa-flask"></i><span>No Effects</span></button>
-                        <button class="tool-btn t-feed" onclick="runQuickCmd('/xp add @a 30 levels', '+30 Lvl')"><i class="fas fa-star"></i><span>Give XP</span></button>
-                        <button class="tool-btn t-cmd" onclick="runQuickCmd('/tp @a 0 100 0', 'TP Spawn')"><i class="fas fa-map-marker-alt"></i><span>TP 0,100,0</span></button>
+                    <div class="cmd-bar">
+                        <input type="text" id="cmd-in" class="cmd-input" placeholder="/">
+                        <button onclick="sendCmd()" style="background:var(--primary); width:45px; border:none; border-radius:50%; color:white;"><i class="fas fa-arrow-up"></i></button>
                     </div>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Monde</h3>
-                    <div class="tool-grid">
-                        <button class="tool-btn t-sun" onclick="runQuickCmd('/time set day', 'Jour')"><i class="fas fa-sun"></i><span>Jour</span></button>
-                        <button class="tool-btn t-sun" onclick="runQuickCmd('/time set night', 'Nuit')"><i class="fas fa-moon"></i><span>Nuit</span></button>
-                        <button class="tool-btn t-rain" onclick="runQuickCmd('/weather clear', 'Soleil')"><i class="fas fa-cloud-sun"></i><span>Soleil</span></button>
-                        <button class="tool-btn t-rain" onclick="runQuickCmd('/weather thunder', 'Orage')"><i class="fas fa-bolt"></i><span>Orage</span></button>
-                    </div>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Maintenance</h3>
-                    <div class="tool-grid">
-                        <button class="tool-btn t-feed" onclick="runQuickCmd('/effect give @a saturation 1 255', 'Nourri')"><i class="fas fa-drumstick-bite"></i><span>Nourrir</span></button>
-                        <button class="tool-btn t-heal" onclick="runQuickCmd('/effect give @a instant_health 1 255', 'Soigné')"><i class="fas fa-heart"></i><span>Soigner</span></button>
-                        <button class="tool-btn t-danger" onclick="runQuickCmd('/kill @e[type=item]', 'Items supprimés')"><i class="fas fa-broom"></i><span>Clear Items</span></button>
-                        <button class="tool-btn t-danger" onclick="runQuickCmd('/difficulty peaceful', 'Mobs tués')"><i class="fas fa-skull"></i><span>Kill Mobs</span></button>
-                    </div>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Règles</h3>
-                    <div class="tool-row"><span>Propagation Feu</span><label class="toggle-switch"><input type="checkbox" onchange="toggleRule('doFireTick', this.checked)"><span class="toggle-slider"></span></label></div>
-                    <div class="tool-row"><span>Spawn Phantoms</span><label class="toggle-switch"><input type="checkbox" onchange="toggleRule('doInsomnia', this.checked)"><span class="toggle-slider"></span></label></div>
-                    <div class="tool-row"><span>Keep Inventory</span><label class="toggle-switch"><input type="checkbox" onchange="toggleRule('keepInventory', this.checked)"><span class="toggle-slider"></span></label></div>
-                    <div class="tool-row"><span>Mob Griefing</span><label class="toggle-switch"><input type="checkbox" checked onchange="toggleRule('mobGriefing', this.checked)"><span class="toggle-slider"></span></label></div>
                 </div>
             </div>
 
             <div id="tab-players" class="tab-page">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>Joueurs en ligne</h3>
-                    <span id="player-count-text" style="background: #333; padding: 5px 10px; border-radius: 10px; font-size: 0.8rem;">0 / 20</span>
+                <div class="player-tabs">
+                    <div class="p-tab active" onclick="switchList('online', this)">En ligne</div>
+                    <div class="p-tab" onclick="switchList('whitelist', this)">Whitelist</div>
+                    <div class="p-tab" onclick="switchList('banned', this)">Bannis</div>
                 </div>
-                <div id="player-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px;"></div>
+                
+                <div id="list-container" class="player-list"></div>
+            </div>
+            
+            <div id="tab-tools" class="tab-page">
+                
+                <div class="arsenal-section">
+                    <div class="sec-label">Temps & Météo</div>
+                    <div class="arsenal-grid">
+                        <button class="a-btn" onclick="rawCmd('time set day')"><i class="fas fa-sun" style="color:#FFC107"></i> Jour</button>
+                        <button class="a-btn" onclick="rawCmd('time set 6000')"><i class="fas fa-cloud-sun" style="color:#FF9800"></i> Midi</button>
+                        <button class="a-btn" onclick="rawCmd('time set night')"><i class="fas fa-moon" style="color:#673AB7"></i> Nuit</button>
+                        <button class="a-btn" onclick="rawCmd('weather clear')"><i class="fas fa-rainbow" style="color:#03A9F4"></i> Beau temps</button>
+                        <button class="a-btn" onclick="rawCmd('weather rain')"><i class="fas fa-cloud-rain" style="color:#607D8B"></i> Pluie</button>
+                        <button class="a-btn" onclick="rawCmd('weather thunder')"><i class="fas fa-bolt" style="color:#F44336"></i> Orage</button>
+                    </div>
+                </div>
+
+                <div class="arsenal-section">
+                    <div class="sec-label">Difficulté</div>
+                    <div class="arsenal-grid">
+                        <button class="a-btn" onclick="rawCmd('difficulty peaceful')"><i class="fas fa-dove" style="color:#4CAF50"></i> Paisible</button>
+                        <button class="a-btn" onclick="rawCmd('difficulty easy')"><i class="fas fa-smile" style="color:#8BC34A"></i> Facile</button>
+                        <button class="a-btn" onclick="rawCmd('difficulty normal')"><i class="fas fa-meh" style="color:#FFC107"></i> Normal</button>
+                        <button class="a-btn" onclick="rawCmd('difficulty hard')"><i class="fas fa-skull" style="color:#F44336"></i> Difficile</button>
+                    </div>
+                </div>
+
+                <div class="arsenal-section">
+                    <div class="sec-label">Maintenance & Urgence</div>
+                    <div class="arsenal-grid">
+                        <button class="a-btn" onclick="rawCmd('save-all')"><i class="fas fa-save" style="color:#4CAF50"></i> Sauvegarder</button>
+                        <button class="a-btn btn-kick" onclick="rawCmd('kick @a Serveur en maintenance')"><i class="fas fa-door-open"></i> Kick All</button>
+                        <button class="a-btn btn-kill" onclick="rawCmd('kill @e[type=item]')"><i class="fas fa-broom"></i> Clear Items</button>
+                        <button class="a-btn btn-kill" onclick="rawCmd('kill @e[type=!player]')"><i class="fas fa-skull-crossbones"></i> Kill Mobs</button>
+                    </div>
+                </div>
+
+                <div class="arsenal-section">
+                    <div class="sec-label">Règles (GameRules)</div>
+                    <div class="arsenal-grid">
+                        <button class="a-btn" onclick="rawCmd('gamerule keepInventory true')"><i class="fas fa-box" style="color:#4CAF50"></i> KeepInv ON</button>
+                        <button class="a-btn" onclick="rawCmd('gamerule keepInventory false')"><i class="fas fa-box-open" style="color:#F44336"></i> KeepInv OFF</button>
+                        <button class="a-btn" onclick="rawCmd('gamerule mobGriefing true')"><i class="fas fa-dragon" style="color:#F44336"></i> MobGrief ON</button>
+                        <button class="a-btn" onclick="rawCmd('gamerule mobGriefing false')"><i class="fas fa-shield-alt" style="color:#4CAF50"></i> MobGrief OFF</button>
+                    </div>
+                </div>
+
             </div>
 
-            <div id="tab-settings" class="tab-page">
-                <h3>Configuration</h3>
-                <div class="setting-item"><div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span>RAM</span><span id="val-ram" style="color:var(--primary)">4 Go</span></div><input type="range" id="range-ram" min="2" max="32" oninput="updateVal('ram',this.value)"></div>
-                <div class="setting-item"><div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span>Slots</span><span id="val-slots" style="color:var(--primary)">20</span></div><input type="range" id="range-slots" min="1" max="100" oninput="updateVal('slots',this.value)"></div>
-                <div class="setting-item"><div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span>Vue</span><span id="val-view" style="color:var(--primary)">10</span></div><input type="range" id="range-view" min="2" max="32" oninput="updateVal('view',this.value)"></div>
-                
-                <button onclick="saveConfig()" style="width:100%; padding:15px; background:#333; border:1px solid var(--primary); color:var(--primary); border-radius:12px; font-weight:bold;">Appliquer</button>
-                <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
-                
-                <button onclick="openPropertiesModal()" style="width:100%; padding:15px; background:#252525; border:1px solid #444; color:white; border-radius:12px; font-weight:bold; display:flex; justify-content:center; gap:10px; margin-bottom:10px;"><i class="fas fa-file-code" style="color:#FF9800;"></i> Éditeur server.properties</button>
-                <button onclick="openCreateModal()" style="width:100%; padding:15px; background:#252525; border:1px solid #444; color:white; border-radius:12px; font-weight:bold; display:flex; justify-content:center; gap:10px;"><i class="fas fa-plus-circle"></i> Créer un serveur</button>
-                
-                <button onclick="logout()" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Se Déconnecter</button>
-            </div>
-        </div>
-
-        <nav class="bottom-nav">
-            <div class="nav-item active" onclick="switchTab('home', this)"><i class="fas fa-home"></i><span>Accueil</span></div>
-            <div class="nav-item" onclick="switchTab('console', this)"><i class="fas fa-terminal"></i><span>Console</span></div>
-            <div class="nav-item" onclick="switchTab('tools', this)"><i class="fas fa-toolbox"></i><span>Outils</span></div>
-            <div class="nav-item" onclick="switchTab('players', this)"><i class="fas fa-users"></i><span>Joueurs</span><div id="nav-badge-players" style="display:none;position:absolute;top:5px;right:25%;width:8px;height:8px;background:red;border-radius:50%;"></div></div>
-            <div class="nav-item" onclick="switchTab('settings', this)"><i class="fas fa-sliders-h"></i><span>Réglages</span></div>
+        <nav class="nav-bar">
+            <div class="nav-item active" onclick="nav('home', this)"><i class="fas fa-server"></i><span>Serveur</span></div>
+            <div class="nav-item" onclick="nav('console', this)"><i class="fas fa-terminal"></i><span>Terminal</span></div>
+            <div class="nav-item" onclick="nav('players', this)"><i class="fas fa-users"></i><span>Joueurs</span></div>
+            <div class="nav-item" onclick="nav('tools', this)"><i class="fas fa-magic"></i><span>Outils</span></div>
         </nav>
     </div>
 
-    <div id="server-modal" class="modal"><div class="modal-content">
-        <h3>Mes Serveurs</h3><div id="server-list-container" style="display:flex; flex-direction:column; gap:10px;"></div>
-        <button onclick="closeAll()" style="margin-top:20px; width:100%; padding:10px; background:transparent; border:none; color:#888;">Fermer</button>
-    </div></div>
-
-    <div id="create-modal" class="modal"><div class="modal-content">
-        <h3>Nouveau Serveur</h3>
-        <input type="text" id="new-srv-name" placeholder="Nom" style="width:100%; padding:12px; background:#252525; border:1px solid #444; color:white; border-radius:8px; margin-bottom:15px;">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
-            <button class="type-select" onclick="selectType(this, 'paper')" style="padding:10px; background:#333; border:1px solid #555; color:white; border-radius:8px;">Paper</button>
-            <button class="type-select" onclick="selectType(this, 'vanilla')" style="padding:10px; background:#333; border:1px solid #555; color:white; border-radius:8px;">Vanilla</button>
-            <button class="type-select" onclick="selectType(this, 'fabric')" style="padding:10px; background:#333; border:1px solid #555; color:white; border-radius:8px;">Fabric</button>
-            <button class="type-select" onclick="selectType(this, 'forge')" style="padding:10px; background:#333; border:1px solid #555; color:white; border-radius:8px;">Forge</button>
-        </div>
-        <select id="new-srv-version" style="width:100%; padding:12px; background:#252525; border:1px solid #444; color:white; border-radius:8px; margin-bottom:20px;"><option>Chargement...</option></select>
-        <button onclick="submitCreation()" style="width:100%; padding:15px; background:var(--primary-gradient); border:none; color:white; border-radius:12px; font-weight:bold;">Créer</button>
-        <button onclick="closeAll()" style="margin-top:10px; width:100%; padding:10px; background:transparent; border:none; color:#888;">Annuler</button>
-    </div></div>
-
-    <div id="action-sheet" class="modal" style="align-items:flex-end;"><div class="modal-content" style="border-radius:25px 25px 0 0; max-width:100%;">
-        <h3 id="sheet-name" style="text-align:center; margin-top:0;">Joueur</h3>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <button onclick="doPlayerAction('kick')" style="padding:15px; background:#f39c12; border:none; border-radius:10px; color:white; font-weight:bold;">KICK</button>
-            <button onclick="doPlayerAction('ban')" style="padding:15px; background:#c0392b; border:none; border-radius:10px; color:white; font-weight:bold;">BAN</button>
-            <button onclick="doPlayerAction('op')" style="padding:15px; background:#2980b9; border:none; border-radius:10px; color:white; font-weight:bold;">OP</button>
-            <button onclick="doPlayerAction('gamemode creative')" style="padding:15px; background:#8e44ad; border:none; border-radius:10px; color:white; font-weight:bold;">CREATIF</button>
-            <button onclick="doPlayerAction('gamemode survival')" style="padding:15px; background:#27ae60; border:none; border-radius:10px; color:white; font-weight:bold;">SURVIE</button>
-        </div>
-        <button onclick="closeAll()" style="margin-top:20px; width:100%; padding:15px; background:#333; border:none; color:white; border-radius:10px;">Fermer</button>
-    </div></div>
-
-    <div id="props-modal" class="modal">
-        <div class="modal-content" style="height: 90vh; max-height: 90vh; display:flex; flex-direction:column;">
-            <div class="modal-header" style="display:flex; justify-content:space-between; margin-bottom:20px; font-weight:bold; font-size:1.2rem;">
-                <span>server.properties</span><span onclick="closeAll()"><i class="fas fa-times"></i></span>
-            </div>
-            <div class="modal-body" style="flex:1; overflow-y:auto;">
-                <div class="prop-search-bar">
-                    <input type="text" id="prop-search" placeholder="Rechercher..." 
-                           style="width:100%; padding:12px; background:#151515; border:1px solid #333; color:white; border-radius:8px;"
-                           oninput="filterProps()">
+    <div id="arsenal-modal" class="modal-overlay">
+        <div class="arsenal-sheet">
+            <div class="arsenal-title" id="p-name">Joueur</div>
+            
+            <div id="arsenal-online">
+                <div class="arsenal-section">
+                    <div class="sec-label">Sanctions</div>
+                    <div class="arsenal-grid">
+                        <button class="a-btn btn-kick" onclick="pAct('kick')"><i class="fas fa-boot"></i> Kick</button>
+                        <button class="a-btn btn-ban" onclick="pAct('ban')"><i class="fas fa-gavel"></i> Ban</button>
+                    </div>
                 </div>
-                <div id="props-list-container">Chargement...</div>
+
+                <div class="arsenal-section">
+                    <div class="sec-label">Permissions</div>
+                    <div class="arsenal-grid">
+                        <button class="a-btn btn-op" onclick="pAct('op')"><i class="fas fa-crown"></i> OP</button>
+                        <button class="a-btn btn-deop" onclick="pAct('deop')"><i class="fas fa-user"></i> DEOP</button>
+                    </div>
+                </div>
+
+                <div class="arsenal-section">
+                    <div class="sec-label">Mode de Jeu</div>
+                    <div class="arsenal-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                        <button class="a-btn btn-gm-s" onclick="pAct('gm-s')">Survie</button>
+                        <button class="a-btn btn-gm-c" onclick="pAct('gm-c')">Créa</button>
+                        <button class="a-btn btn-gm-sp" onclick="pAct('gm-sp')">Spec</button>
+                    </div>
+                </div>
+
+                <div class="arsenal-section">
+                    <div class="sec-label">Danger</div>
+                    <div class="arsenal-grid">
+                        <button class="a-btn btn-kill" onclick="pAct('kill')"><i class="fas fa-skull"></i> Kill</button>
+                        <button class="a-btn" onclick="pAct('tp-spawn')"><i class="fas fa-map-marker-alt"></i> Spawn</button>
+                    </div>
+                </div>
             </div>
-            <button onclick="saveProperties()" style="width:100%; padding:15px; background:var(--primary-gradient); border:none; color:white; border-radius:12px; font-weight:bold; margin-top:10px; flex-shrink:0;">SAUVEGARDER</button>
+
+            <div id="arsenal-banned" style="display:none">
+                <button class="a-btn btn-unban" onclick="pAct('unban')"><i class="fas fa-lock-open"></i> PARDONNER (UNBAN)</button>
+            </div>
+            
+            <button onclick="closeModal()" style="width:100%; padding:15px; background:transparent; border:none; color:var(--text-sec); margin-top:10px;">Annuler</button>
+        </div>
+    </div>
+
+    <div id="srv-modal" class="modal-overlay">
+        <div class="arsenal-sheet">
+            <div class="arsenal-title">Choisir Serveur</div>
+            <div id="srv-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <button onclick="closeModal()" style="width:100%; margin-top:20px; background:transparent; border:none; color:#888;">Fermer</button>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let selectedPlayer = null;
-        let selectedType = 'paper';
+        let pin = '';
+        let targetPlayer = '';
 
-        // --- TOASTS ---
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            let icon = 'fa-check-circle'; let color = 'var(--primary)';
-            if(type==='error'){icon='fa-exclamation-circle';color='#ef5350';}
-            if(type==='info'){icon='fa-info-circle';color='#2196F3';}
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<i class="fas ${icon}" style="color: ${color}"></i><span>${message}</span>`;
-            container.appendChild(toast);
-            if(navigator.vibrate) navigator.vibrate(type === 'error' ? [50, 50, 50] : 50);
-            setTimeout(() => { toast.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); }, 3000);
-        }
-
-        // --- RIPPLE ---
-        document.addEventListener('click', function (e) {
-            const target = e.target.closest('button') || e.target.closest('.tool-btn') || e.target.closest('.nav-item');
-            if (target) {
-                target.classList.add('ripple-effect');
-                const circle = document.createElement('span');
-                const diameter = Math.max(target.clientWidth, target.clientHeight);
-                const radius = diameter / 2;
-                const rect = target.getBoundingClientRect();
-                circle.style.width = circle.style.height = `${diameter}px`;
-                circle.style.left = `${e.clientX - rect.left - radius}px`;
-                circle.style.top = `${e.clientY - rect.top - radius}px`;
-                circle.classList.add('ripple');
-                const oldRipple = target.getElementsByClassName('ripple')[0];
-                if (oldRipple) oldRipple.remove();
-                target.appendChild(circle);
+        // --- AUTH ---
+        function addPin(n) {
+            if(pin.length < 4) {
+                pin += n; renderPin();
+                if(pin.length === 4) socket.emit('auth-login', pin);
             }
-        });
-
-        function switchTab(tabName, el) {
-            document.querySelectorAll('.tab-page').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-' + tabName).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
-            if(tabName === 'settings') socket.emit('get-perf');
-            if(tabName === 'players') socket.emit('get-players');
         }
-
-        function tryLogin() {
-            const pin = document.getElementById('pin-input').value;
-            if(pin.length < 4) return;
-            socket.emit('auth-login', pin);
-            localStorage.setItem('temp_pin', pin);
+        function delPin() { pin = ''; renderPin(); }
+        function renderPin() {
+            for(let i=0; i<4; i++) {
+                document.getElementById(`d${i}`).style.background = (i < pin.length) ? 'var(--primary)' : 'transparent';
+                document.getElementById(`d${i}`).style.borderColor = (i < pin.length) ? 'var(--primary)' : '#555';
+            }
         }
-
-        socket.on('auth-result', (res) => {
-            if (res.success) {
-                localStorage.setItem('saved_pin', localStorage.getItem('temp_pin'));
-                document.getElementById('login-screen').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('login-screen').style.display = 'none';
-                    document.getElementById('app-ui').style.display = 'flex';
-                }, 500);
+        socket.on('auth-result', r => {
+            if(r.success) {
+                document.getElementById('login-screen').style.display='none';
+                document.getElementById('app-ui').style.display='flex';
+                localStorage.setItem('saved_pin', pin);
             } else {
-                document.getElementById('login-msg').innerText = "Code PIN Incorrect";
-                document.getElementById('pin-input').value = '';
+                showToast("Code PIN Erroné", "error"); pin=''; renderPin();
             }
         });
-
         socket.on('connect', () => {
-            const saved = localStorage.getItem('saved_pin');
-            if(saved) socket.emit('auth-login', saved);
+            const s = localStorage.getItem('saved_pin');
+            if(s) { pin=s; socket.emit('auth-login', s); }
         });
 
+        // --- NAVIGATION ---
+        function nav(id, el) {
+            document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+            document.getElementById('tab-'+id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            
+            if(id === 'players') socket.emit('get-players');
+        }
+
+        // --- TERMINAL LOGIC ---
         socket.on('log-update', msg => {
-            // Seulement les logs importants en Toast, le reste en console
-            if(msg.includes('✅') || msg.includes('❌') || msg.includes('⚠️')) {
-                // showToast(msg.replace(/[\u{1F600}-\u{1F64F}]/gu, ""), msg.includes('❌')?'error':'info');
-            }
-            addLog(msg);
-        });
-
-        socket.on('server-state', state => {
-            const isRunning = (state === 'running');
-            document.getElementById('btn-start').disabled = isRunning;
-            document.getElementById('btn-stop').disabled = !isRunning;
-            const txt = document.getElementById('status-text');
-            const ring = document.getElementById('status-ring');
-            const det = document.getElementById('status-details');
-            if(isRunning) {
-                txt.innerText = "ONLINE"; txt.style.color = "#4CAF50";
-                ring.style.background = "#4CAF50"; ring.style.color = "#4CAF50";
-                det.innerText = "Serveur en ligne";
-            } else {
-                txt.innerText = "OFFLINE"; txt.style.color = "#ef5350";
-                ring.style.background = "#ef5350"; ring.style.color = "#ef5350";
-                det.innerText = "Serveur éteint";
-                updatePlayers([]);
-            }
-        });
-
-        function addLog(msg) {
             const l = document.getElementById('logs');
             const d = document.createElement('div');
-            d.style.marginBottom = "4px"; d.style.wordWrap = "break-word";
-            if(msg.includes('ERR')||msg.includes('Exception')) d.style.color='#ff5252';
-            else if(msg.includes('WARN')) d.style.color='#ffca28';
-            else if(msg.includes('Done')) d.style.color='#66bb6a';
+            d.className = 'log-line';
+            if(msg.includes('ERR') || msg.includes('Exception')) d.classList.add('err');
+            if(msg.includes('INFO')) d.classList.add('info');
             d.innerText = `> ${msg.replace(/\[.*?\]/g,'').trim()}`;
-            l.appendChild(d); l.scrollTop = l.scrollHeight;
+            l.appendChild(d);
+            l.scrollTop = l.scrollHeight;
+        });
+
+        function sendCmd() {
+            const i = document.getElementById('cmd-in');
+            if(i.value) { socket.emit('cmd-input', i.value); i.value=''; }
         }
 
-        function sendAction(t) { socket.emit('cmd-'+t); showToast(t==='start'?'Démarrage...':'Arrêt demandé...', 'info'); }
-        function sendCmd() { const i = document.getElementById('cmd-input'); if(i.value.trim()){ socket.emit('cmd-input', i.value.trim()); i.value=''; } }
+        // --- STATUS ---
+        socket.on('server-state', s => {
+            const on = s==='running';
+            document.getElementById('status-hero').className = on ? 'status-hero online' : 'status-hero offline';
+            document.getElementById('status-text').innerText = on ? 'EN LIGNE' : 'HORS LIGNE';
+            document.getElementById('btn-start').disabled = on;
+            document.getElementById('btn-stop').disabled = !on;
+            document.getElementById('btn-stop').style.opacity = on ? '1' : '0.5';
+            document.getElementById('btn-start').style.opacity = on ? '0.5' : '1';
+        });
 
-        socket.on('player-list-full', list => updatePlayers(list));
-        socket.on('player-event', () => socket.emit('get-players'));
+        socket.on('server-stats', st => {
+            document.getElementById('ram-val').innerText = st.memory.toFixed(0) + ' MB';
+            document.getElementById('cpu-val').innerText = st.cpu.toFixed(1) + '%';
+        });
 
-        function updatePlayers(list) {
-            const count = list.length;
-            document.getElementById('player-count-text').innerText = `${count} Connectés`;
-            const badge = document.getElementById('nav-badge-players');
-            if(count > 0) badge.style.display = 'block'; else badge.style.display = 'none';
-            const g = document.getElementById('player-grid'); g.innerHTML = '';
-            if(count===0) { g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#666;">Personne.</div>'; return; }
-            list.forEach(name => {
-                const d = document.createElement('div');
-                d.className = 'player-card';
-                d.innerHTML = `<img src="https://mc-heads.net/avatar/${name}" class="head-img"><div>${name}</div>`;
-                d.onclick = () => openSheet(name);
-                g.appendChild(d);
+        // --- JOUEURS (ARSENAL) ---
+        let listContext = 'online';
+
+        function switchList(type, el) {
+            listContext = type;
+            document.querySelectorAll('.p-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            renderCurrentList();
+        }
+
+        socket.on('player-list-full', l => { window.onlineList = l; if(listContext==='online') renderCurrentList(); });
+        socket.on('player-lists-data', d => { 
+            window.whiteList = d.whitelist; 
+            window.banList = d.banlist; 
+            renderCurrentList(); 
+        });
+
+        function renderCurrentList() {
+            const c = document.getElementById('list-container'); c.innerHTML = '';
+            let list = [];
+            if(listContext === 'online') list = window.onlineList || [];
+            if(listContext === 'whitelist') list = window.whiteList || [];
+            if(listContext === 'banned') list = window.banList || [];
+
+            if(!list.length) { c.innerHTML='<div style="text-align:center; padding:20px; color:#666">Aucun joueur</div>'; return; }
+
+            list.forEach(p => {
+                const name = p.name || p; // Gestion string vs object
+                const row = document.createElement('div');
+                row.style.cssText = "background:var(--bg-card); padding:12px; border-radius:10px; display:flex; align-items:center; border:1px solid var(--border);";
+                row.innerHTML = `<img src="https://mc-heads.net/avatar/${name}" style="width:32px; border-radius:6px; margin-right:12px;"> 
+                                 <span style="font-weight:600; flex:1">${name}</span> <i class="fas fa-ellipsis-v" style="color:#666"></i>`;
+                row.onclick = () => openArsenal(name);
+                c.appendChild(row);
             });
         }
 
-        socket.on('perf-data', data => {
-            if(data.ram) { document.getElementById('range-ram').value = data.ram; updateVal('ram', data.ram); }
-            if(data.slots) { document.getElementById('range-slots').value = data.slots; updateVal('slots', data.slots); }
-            if(data.view) { document.getElementById('range-view').value = data.view; updateVal('view', data.view); }
-        });
+        function openArsenal(name) {
+            targetPlayer = name;
+            document.getElementById('p-name').innerText = name;
+            document.getElementById('arsenal-modal').classList.add('active');
+            
+            if(listContext === 'banned') {
+                document.getElementById('arsenal-online').style.display = 'none';
+                document.getElementById('arsenal-banned').style.display = 'block';
+            } else {
+                document.getElementById('arsenal-online').style.display = 'block';
+                document.getElementById('arsenal-banned').style.display = 'none';
+            }
+        }
 
-        socket.on('servers-list', list => {
-            const c = document.getElementById('server-list-container'); c.innerHTML = '';
-            list.forEach(s => {
-                const btn = document.createElement('div');
-                btn.style.cssText = "background:#252525; padding:15px; border-radius:10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;";
-                btn.innerHTML = `<div><div style="font-weight:bold;">${s.name}</div><div style="font-size:0.8rem;color:#888;">${s.type} ${s.version}</div></div><i class="fas fa-chevron-right"></i>`;
-                btn.onclick = () => { socket.emit('select-server', s.path); document.getElementById('srv-btn-name').innerText = s.name; document.getElementById('current-server-display').innerText = s.name; closeAll(); showToast('Serveur chargé'); };
-                c.appendChild(btn);
+        function pAct(act) {
+            socket.emit('player-action', { action: act, target: targetPlayer });
+            closeModal();
+            showToast('Action envoyée');
+        }
+
+        // --- UTILS ---
+        function action(a) { socket.emit('cmd-'+a); }
+        function rawCmd(c) { socket.emit('cmd-input', '/'+c); showToast('Commande envoyée'); }
+        function closeModal() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
+        function showToast(m, t='info') {
+            const o = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = m;
+            o.style.transform = "translateX(-50%) translateY(0)";
+            setTimeout(() => o.style.transform = "translateX(-50%) translateY(-100px)", 2500);
+        }
+
+        // --- SERVERS ---
+        function requestServers() {
+            document.getElementById('srv-modal').classList.add('active');
+            socket.emit('get-servers');
+        }
+        socket.on('servers-list', l => {
+            const c = document.getElementById('srv-list'); c.innerHTML='';
+            l.forEach(s => {
+                const b = document.createElement('div');
+                b.style.cssText = "background:#333; padding:15px; border-radius:10px; font-weight:600; cursor:pointer;";
+                b.innerText = s.name;
+                b.onclick = () => { socket.emit('select-server', s.path); document.getElementById('srv-name').innerText = s.name; closeModal(); }
+                c.appendChild(b);
             });
-        });
-
-        socket.on('version-list-data', list => {
-            const s = document.getElementById('new-srv-version'); s.innerHTML = '';
-            list.slice(0,50).forEach(v => { const o = document.createElement('option'); o.value=v.id; o.innerText=v.id; s.appendChild(o); });
-        });
-
-        function openServerList() { document.getElementById('server-modal').classList.add('active'); socket.emit('get-servers'); }
-        function openCreateModal() { document.getElementById('create-modal').classList.add('active'); socket.emit('get-version-list'); }
-        function closeAll() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); }
-        function updateVal(t, v) { document.getElementById('val-'+t).innerText = v + (t==='ram'?' Go':''); }
-        function saveConfig() { socket.emit('set-perf', { ram: parseInt(document.getElementById('range-ram').value), slots: parseInt(document.getElementById('range-slots').value), view: parseInt(document.getElementById('range-view').value) }); showToast("Réglages appliqués"); }
-        function selectType(btn, type) { selectedType = type; document.querySelectorAll('.type-select').forEach(b => { b.style.borderColor='#555'; b.style.background='#333'; }); btn.style.borderColor = '#4CAF50'; btn.style.background = 'rgba(76,175,80,0.2)'; }
-        function submitCreation() { const n = document.getElementById('new-srv-name').value; const v = document.getElementById('new-srv-version').value; if(n && v) { socket.emit('create-server', { name: n, type: selectedType, version: v }); closeAll(); showToast("Création demandée..."); } }
-        function openSheet(name) { selectedPlayer = name; document.getElementById('sheet-name').innerText = name; document.getElementById('action-sheet').classList.add('active'); }
-        function doPlayerAction(act) { if(selectedPlayer) socket.emit('cmd-input', `/${act} ${selectedPlayer}`); closeAll(); showToast(`Action: ${act}`); }
-        document.getElementById('pin-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') tryLogin(); });
-        
-        function logout() {
-            localStorage.removeItem('saved_pin'); localStorage.removeItem('temp_pin');
-            document.getElementById('app-ui').style.display = 'none';
-            const loginScreen = document.getElementById('login-screen'); loginScreen.style.display = 'flex';
-            setTimeout(() => { loginScreen.style.opacity = '1'; }, 10);
-            document.getElementById('pin-input').value = '';
-        }
-
-        // --- TOOLBOX ---
-        function runQuickCmd(cmd, feedback) {
-            const statusText = document.getElementById('status-text').innerText;
-            if (statusText === 'OFFLINE') { showToast("Serveur éteint", 'error'); return; }
-            socket.emit('cmd-input', cmd);
-            showToast(feedback, 'info');
-        }
-        function toggleRule(rule, isEnabled) { const val = isEnabled ? 'true' : 'false'; runQuickCmd(`/gamerule ${rule} ${val}`, `Règle ${rule} -> ${val}`); }
-        function clearChat() { showToast("Nettoyage du chat...", 'info'); for(let i=0; i<50; i++) socket.emit('cmd-input', '/tellraw @a " "'); }
-
-        // --- PROPERTIES ---
-        window.openPropertiesModal = function() { document.getElementById('props-modal').classList.add('active'); document.getElementById('props-list-container').innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Récupération...</div>'; socket.emit('get-full-properties'); }
-        socket.on('server-properties-data', (props) => { renderProps(props); });
-        function renderProps(props) {
-            const container = document.getElementById('props-list-container'); container.innerHTML = '';
-            const keys = Object.keys(props).sort();
-            keys.forEach(key => {
-                const val = props[key]; const div = document.createElement('div'); div.className = 'prop-item'; div.dataset.key = key;
-                let inputHtml = '';
-                if (val === 'true' || val === 'false') { const isChecked = (val === 'true') ? 'checked' : ''; inputHtml = `<label class="toggle-switch"><input type="checkbox" class="prop-input-bool" ${isChecked}><span class="toggle-slider"></span></label>`; } 
-                else { const type = isNaN(val) ? 'text' : 'number'; inputHtml = `<input type="${type}" class="prop-input-val prop-input" value="${val}">`; }
-                div.innerHTML = `<span class="prop-label">${key}</span> ${inputHtml}`; container.appendChild(div);
-            });
-        }
-        window.filterProps = function() {
-            const term = document.getElementById('prop-search').value.toLowerCase();
-            document.querySelectorAll('.prop-item').forEach(item => { const key = item.dataset.key.toLowerCase(); item.style.display = key.includes(term) ? 'flex' : 'none'; });
-        }
-        window.saveProperties = function() {
-            const newProps = {};
-            document.querySelectorAll('.prop-item').forEach(item => {
-                const key = item.querySelector('.prop-label').innerText; const boolInput = item.querySelector('.prop-input-bool'); const valInput = item.querySelector('.prop-input-val');
-                if (boolInput) newProps[key] = boolInput.checked ? 'true' : 'false'; else if (valInput) newProps[key] = valInput.value;
-            });
-            socket.emit('save-full-properties', newProps); closeAll(); showToast("Sauvegarde effectuée");
-        }
-
-        // --- GRAPHIQUE ---
-        const ctx = document.getElementById('perfChart').getContext('2d');
-        const perfChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: Array(20).fill(''),
-                datasets: [
-                    { label: 'CPU', data: Array(20).fill(0), borderColor: '#2196F3', borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true, backgroundColor: 'rgba(33, 150, 243, 0.1)' },
-                    { label: 'RAM', data: Array(20).fill(0), borderColor: '#4CAF50', borderWidth: 2, pointRadius: 0, tension: 0.4, yAxisID: 'y1' }
-                ]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { beginAtZero: true, max: 100, grid: { color: '#333' }, ticks: { display: false } }, y1: { position: 'right', display: false, grid: { drawOnChartArea: false } } }, animation: { duration: 0 } }
-        });
-
-        socket.on('server-stats', (stats) => {
-            document.getElementById('cpu-val').innerText = stats.cpu.toFixed(1) + '%';
-            document.getElementById('ram-val').innerText = stats.memory.toFixed(0) + ' MB';
-            const cpuData = perfChart.data.datasets[0].data; cpuData.shift(); cpuData.push(stats.cpu);
-            const ramData = perfChart.data.datasets[1].data; ramData.shift(); ramData.push(stats.memory);
-            perfChart.update();
         });
     </script>
 </body>
