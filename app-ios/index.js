@@ -3,17 +3,9 @@ let html5QrCode;
 function connect(ipAddress) {
     const ip = ipAddress || document.getElementById('ip-input').value;
     if (ip) {
-        document.getElementById('home-screen').style.display = 'none';
-        document.getElementById('scan-screen').style.display = 'none';
-        document.getElementById('web-screen').style.display = 'block';
-        document.getElementById('app-frame').src = ip;
+        // Ouvre l'interface de ton serveur dans un nouvel onglet pour éviter les blocages
+        window.open(ip, '_blank');
     }
-}
-
-function disconnect() {
-    document.getElementById('home-screen').style.display = 'flex';
-    document.getElementById('web-screen').style.display = 'none';
-    document.getElementById('app-frame').src = '';
 }
 
 async function startScan() {
@@ -26,7 +18,7 @@ async function startScan() {
     try {
         await html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
             stopScan();
-            connect(decodedText); // Connecte automatiquement avec l'IP du QR Code
+            connect(decodedText);
         });
     } catch (err) {
         alert("Erreur caméra : " + err);
