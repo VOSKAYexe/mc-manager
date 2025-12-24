@@ -8,5 +8,41 @@
   </head>
   <body>
     <script src="index.js"></script>
+
+    <style>
+  #ios-install-prompt {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 1000;
+    font-family: sans-serif;
+    border: 1px solid #ddd;
+  }
+</style>
+
+<div id="ios-install-prompt">
+  <p style="margin:0 0 10px 0; color:#333;"><strong>Installer l'app :</strong></p>
+  <p style="margin:0; font-size:14px; color:#666;">
+    Appuyez sur le bouton <img src="https://img.icons8.com/ios/20/000000/export.png" style="vertical-align:middle"> (Partager), puis faites défiler pour choisir <strong>"Sur l'écran d'accueil"</strong>.
+  </p>
+  <button onclick="document.getElementById('ios-install-prompt').style.display='none'" style="margin-top:10px; border:none; background:none; color:blue; font-weight:bold;">Fermer</button>
+</div>
+
+<script>
+  // Vérifie si c'est un appareil iOS (iPhone/iPad)
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  // Vérifie si l'app est déjà installée (en mode standalone)
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+  if (isIos && !isStandalone) {
+    document.getElementById('ios-install-prompt').style.display = 'block';
+  }
+</script>
   </body>
 </html>
