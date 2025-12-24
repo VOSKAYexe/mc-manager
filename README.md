@@ -10,3 +10,7 @@ Simplicité : Lancez un serveur en moins de 3 clics.
 Flexibilité : Compatible avec Vanilla, Spigot, Forge, Fabric et Paper.
 
 Sécurité : Système de backup automatisé pour ne jamais perdre votre monde.
+
+<a href="./app-ios/index.html" style="padding:10px 20px; background:blue; color:white; text-decoration:none; border-radius:5px;">
+    Installer l'App
+</a>
