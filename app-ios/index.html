@@ -4,11 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MC Manager Web</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <style>
+        /* DESIGN GLOBAL (Inspiré de ton app originale) */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            margin: 0; background-color: #121212; 
+            font-family: -apple-system, system-ui, sans-serif; 
+            color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh;
+        }
+        .container { 
+            display: flex; flex-direction: column; align-items: center; 
+            width: 100%; max-width: 350px; padding: 20px; 
+        }
+        .logo { color: #4CAF50; font-size: 32px; font-weight: 900; margin: 0; }
+        .subtitle { color: #888; margin-bottom: 30px; font-size: 14px; text-transform: uppercase; }
+        .card { 
+            width: 100%; background: #1e1e1e; padding: 25px; border-radius: 16px; 
+            border: 1px solid #333; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+        .label { color: #888; font-size: 11px; font-weight: bold; display: block; margin-bottom: 8px; }
+        .input { 
+            width: 100%; background: #121212; border: 1px solid #444; color: white; 
+            padding: 16px; border-radius: 10px; margin-bottom: 20px; font-size: 16px; outline: none;
+        }
+        .btn-primary { 
+            width: 100%; background: #4CAF50; color: white; border: none; 
+            padding: 16px; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer;
+        }
+        .btn-secondary { 
+            width: 100%; background: transparent; border: 1px solid #4CAF50; 
+            color: #4CAF50; padding: 14px; border-radius: 10px; font-weight: bold; margin-top: 20px; cursor: pointer;
+        }
+
+        /* DESIGN DU SCANNER (Plein écran) */
+        #scan-screen {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; flex-direction: column;
+        }
+        #reader { width: 100% !important; flex: 1; }
+        #reader video { object-fit: cover !important; } /* Force la caméra à remplir l'espace */
+        .cancel-scan {
+            padding: 20px; background: #d32f2f; color: white; border: none;
+            font-weight: bold; width: 100%; font-size: 16px;
+        }
+    </style>
 </head>
 <body>
+
     <div id="home-screen" class="container">
         <h1 class="logo">MC MANAGER</h1>
         <p class="subtitle">Télécommande Web</p>
@@ -17,20 +61,64 @@
             <input type="text" id="ip-input" class="input" value="http://192.168.1.15:3000">
             <button class="btn-primary" onclick="connect()">CONNEXION</button>
         </div>
-        <p style="color:#666; margin: 20px 0;">— OU —</p>
         <button class="btn-secondary" onclick="startScan()">SCANNER QR CODE</button>
     </div>
 
-    <div id="scan-screen" style="display:none; flex-direction:column; height:100vh; background:#000;">
-        <div id="reader" style="width:100%; flex:1;"></div>
-        <button class="close-btn" onclick="stopScan()">Annuler</button>
+    <div id="scan-screen">
+        <div id="reader"></div>
+        <button class="cancel-scan" onclick="stopScan()">ANNULER LE SCAN</button>
     </div>
 
-    <div id="web-screen" style="display:none; height:100vh; width:100vw;">
-        <button class="close-btn" onclick="disconnect()">Fermer / Déconnecter</button>
-        <iframe id="app-frame" src="" style="width:100%; height:calc(100% - 50px); border:none;"></iframe>
-    </div>
+    <script>
+        let html5QrCode;
 
-    <script src="index.js"></script>
+        function connect(ipAddress) {
+            const ip = ipAddress || document.getElementById('ip-input').value;
+            if (ip) {
+                let targetUrl = ip.startsWith('http') ? ip : 'http://' + ip;
+                window.location.href = targetUrl; // Redirection directe
+            }
+        }
+
+        async function startScan() {
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('scan-screen').style.display = 'flex';
+            
+            html5QrCode = new Html5Qrcode("reader");
+            
+            // Configuration optimisée pour mobile
+            const config = { 
+                fps: 20, 
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0 
+            };
+
+            try {
+                await html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    config, 
+                    (decodedText) => {
+                        stopScan();
+                        connect(decodedText);
+                    }
+                );
+            } catch (err) {
+                alert("Erreur caméra : Vérifiez les autorisations Safari/Chrome.");
+                stopScan();
+            }
+        }
+
+        function stopScan() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('scan-screen').style.display = 'none';
+                    document.getElementById('home-screen').style.display = 'flex';
+                });
+            } else {
+                document.getElementById('scan-screen').style.display = 'none';
+                document.getElementById('home-screen').style.display = 'flex';
+            }
+        }
+    </script>
 </body>
 </html>
