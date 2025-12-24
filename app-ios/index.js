@@ -3,8 +3,13 @@ let html5QrCode;
 function connect(ipAddress) {
     const ip = ipAddress || document.getElementById('ip-input').value;
     if (ip) {
-        // Ouvre l'interface de ton serveur dans un nouvel onglet pour éviter les blocages
-        window.open(ip, '_blank');
+        // Validation basique de l'URL
+        let targetUrl = ip;
+        if (!ip.startsWith('http')) {
+            targetUrl = 'http://' + ip;
+        }
+        // Redirection directe au lieu de window.open (évite le blocage pop-up)
+        window.location.href = targetUrl;
     }
 }
 
