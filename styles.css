@@ -1344,11 +1344,18 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
 /* On cible spécifiquement la modale des propriétés pour l'élargir */
 #properties-modal .modal-content {
-    max-width: 900px; /* Beaucoup plus large */
+    max-width: 900px;
     width: 90%;
-    height: 85vh; /* Prend 85% de la hauteur */
+    height: 85vh; /* Hauteur fixe */
     display: flex;
     flex-direction: column;
+    
+    /* --- CENTRAGE PARFAIT --- */
+    margin: 0; /* Annule la marge de 10% par défaut */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Décale de 50% de sa propre taille pour centrer */
 }
 
 /* Titres de sections dans la config */
@@ -1402,4 +1409,66 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     font-size: 0.9em;
     color: var(--text-secondary);
     font-family: monospace;
+}
+
+/* --- ANIMATIONS DU WIZARD --- */
+.wizard-card {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.wizard-card:hover {
+    transform: translateY(-8px) scale(1.02); /* L'effet "Hop" vers le haut */
+    box-shadow: 0 15px 30px rgba(0,0,0,0.25);
+    border-color: var(--primary-color) !important; /* Force la bordure verte/couleur du thème */
+}
+
+/* Effet spécifique pour la carte Cross-Play (Bleu) */
+#btn-wizard-cross:hover {
+    border-color: #2196F3 !important;
+}
+
+/* ========================================
+   DETAILS WIZARD (Avantages / Inconvénients)
+   ======================================== */
+
+.wizard-details {
+    margin-top: 20px;
+    font-size: 0.9em;
+    text-align: left;
+    background: rgba(0, 0, 0, 0.2); /* Fond sombre léger */
+    padding: 15px;
+    border-radius: 8px;
+    width: 100%;
+    border: 1px solid var(--border-primary);
+}
+
+.detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.detail-row:last-child {
+    margin-bottom: 0;
+}
+
+/* Style pour les Avantages (Vert) */
+.detail-row.pro {
+    color: #4CAF50; 
+}
+
+/* Style pour les Inconvénients (Orange/Rouge) */
+.detail-row.con {
+    color: #FF9800; 
+}
+
+/* Ajustement des icônes pour qu'elles soient bien alignées avec le texte */
+.detail-row i {
+    margin-top: 3px;
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
 }

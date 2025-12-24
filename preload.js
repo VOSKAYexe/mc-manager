@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('api', {
     saveServerProps: (path, props) => ipcRenderer.invoke('save-server-props', path, props),
     deleteServer: (path) => ipcRenderer.invoke('delete-server', path),
     deleteServerFiles: (path) => ipcRenderer.invoke('delete-server-files', path),
+    installServer: (options) => ipcRenderer.invoke('install-server', options),
 
     // ========================================
     // DOSSIERS MODS / PLUGINS

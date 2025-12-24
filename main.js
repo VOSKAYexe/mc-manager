@@ -133,6 +133,7 @@ function registerIpcHandlers() {
     ipcMain.on('start-server', handleStartServer);
     ipcMain.on('stop-server', handleStopServer);
     ipcMain.on('send-command', handleSendCommand);
+    ipcMain.handle('install-server', handleInstallServer);
     
     ipcMain.on('open-external-link', handleOpenExternalLink);
     ipcMain.on('open-mods-folder', handleOpenModsFolder);
@@ -152,7 +153,6 @@ function registerIpcHandlers() {
     ipcMain.handle('search-addons', handleSearchAddons);
     ipcMain.handle('download-addon', handleDownloadAddon);
 
-    // ... tes autres handlers ...
 ipcMain.handle('get-app-settings', () => loadAppSettings());
 ipcMain.handle('save-app-settings', (event, settings) => saveAppSettings(settings));
 
@@ -208,22 +208,54 @@ function ensureDirectoryExists(p) { if (!fs.existsSync(p)) fs.mkdirSync(p, { rec
 
 function downloadFile(url, destination) {
     return new Promise((resolve, reject) => {
+        // Nettoyage préventif
         if (fs.existsSync(destination)) try { fs.unlinkSync(destination); } catch (e) {}
+        
         const file = fs.createWriteStream(destination);
+        
         const req = https.get(url, { headers: { 'User-Agent': 'MC-Manager' } }, (res) => {
-            if (res.statusCode === 301 || res.statusCode === 302) return downloadFile(res.headers.location, destination).then(resolve).catch(reject);
-            if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return; }
+            // GESTION DES REDIRECTIONS (Correctif "Invalid URL")
+            if (res.statusCode === 301 || res.statusCode === 302) {
+                let newUrl = res.headers.location;
+                // Si la redirection est relative (ex: /v2/...), on reconstruit l'URL complète
+                if (newUrl.startsWith('/')) {
+                    const u = new URL(url);
+                    newUrl = `${u.protocol}//${u.host}${newUrl}`;
+                }
+                file.close();
+                return downloadFile(newUrl, destination).then(resolve).catch(reject);
+            }
+            
+            if (res.statusCode !== 200) { 
+                file.close();
+                try { fs.unlinkSync(destination); } catch(e){}
+                reject(new Error(`HTTP ${res.statusCode}`)); 
+                return; 
+            }
+
             const len = parseInt(res.headers['content-length'], 10);
             let cur = 0;
             res.on('data', (chunk) => {
                 cur += chunk.length;
-                if (len) { const pct = Math.round((cur / len) * 100); if (pct % 20 === 0) sendToConsole(`📥 Téléchargement: ${pct}%`); }
+                if (len) { 
+                    const pct = Math.round((cur / len) * 100); 
+                    if (pct % 20 === 0) sendToConsole(`📥 Téléchargement: ${pct}%`); 
+                }
             });
             res.pipe(file);
             file.on('finish', () => file.close(() => resolve('SUCCESS')));
         });
-        req.on('error', (e) => { fs.unlink(destination, () => {}); reject(e); });
-        file.on('error', (e) => { fs.unlink(destination, () => {}); reject(e); });
+
+        req.on('error', (e) => { 
+            file.close();
+            try { fs.unlinkSync(destination); } catch(e){}
+            reject(e); 
+        });
+        file.on('error', (e) => { 
+            file.close();
+            try { fs.unlinkSync(destination); } catch(e){}
+            reject(e); 
+        });
     });
 }
 
@@ -761,95 +793,83 @@ function runForgeScript(folderPath, ramGB, customJavaPath) {
     }
 }
 
-// 1. Fonction helper pour Windows (PowerShell)
-function getStatsWindows(pid) {
-    return new Promise((resolve, reject) => {
-        const psCommand = `Get-CimInstance -ClassName Win32_PerfFormattedData_PerfProc_Process -Filter "IDProcess = ${pid}" | Select-Object PercentProcessorTime, WorkingSetPrivate | ConvertTo-Json`;
-        
-        const ps = spawn('powershell.exe', ['-NoProfile', '-Command', psCommand]);
-        let data = '';
-
-        ps.stdout.on('data', (chunk) => { data += chunk; });
-        
-        ps.on('close', (code) => {
-            if (code !== 0 || !data.trim()) { resolve(null); return; }
-            try {
-                const json = JSON.parse(data);
-                const stat = Array.isArray(json) ? json[0] : json;
-                resolve({
-                    cpu: stat.PercentProcessorTime,
-                    memory: stat.WorkingSetPrivate
-                });
-            } catch (e) { resolve(null); }
-        });
-        ps.on('error', () => resolve(null));
-    });
-}
-
-// 2. La fonction principale de gestion du processus
-// ==================================================================
-//  DÉBUT DU BLOC DE REMPLACEMENT (STATS + LOGS CORRIGÉS)
-// ==================================================================
-
-// 1. Fonction de recherche profonde (Recursive) pour Windows
-function getStatsWindows(rootPid) {
-    return new Promise((resolve, reject) => {
-        // Ce script PowerShell récupère tous les processus,
-        // puis descend l'arbre généalogique jusqu'à trouver 'java'
-        const psCommand = `
-            $root = ${rootPid};
-            $target = $root;
-            $found = $false;
+// 1. Fonction intelligente pour récupérer les stats (Vanilla & Forge)
+function getStatsNative(pid) {
+    return new Promise((resolve) => {
+        // Ce script ne cherche pas par nom ("java"), mais par consommation.
+        // Il prend le PID de départ, trouve ses enfants, et garde celui qui a la plus grosse RAM.
+        const psScript = `
+            $ppid = ${pid}
+            $targetPid = $ppid
+            $maxRam = 0
             
-            # On récupère la liste des processus une seule fois (plus rapide)
-            $procs = Get-CimInstance Win32_Process;
-            $parents = @($root);
-
-            # On cherche jusqu'à 4 niveaux de profondeur (cmd -> cmd -> conhost -> java)
-            for ($i=0; $i -lt 4; $i++) {
-                $children = $procs | Where-Object { $parents -contains $_.ParentProcessId };
-                if (!$children) { break; }
-                
-                # Est-ce qu'on a trouvé Java ?
-                $java = $children | Where-Object { $_.Name -match 'java' } | Select-Object -First 1;
-                if ($java) {
-                    $target = $java.ProcessId;
-                    $found = $true;
-                    break;
+            # 1. On liste le processus parent et ses enfants
+            $candidates = @()
+            try { $candidates += Get-Process -Id $ppid -ErrorAction SilentlyContinue } catch {}
+            
+            try {
+                $children = Get-CimInstance Win32_Process -Filter "ParentProcessId = $ppid"
+                foreach ($c in $children) {
+                    try { $candidates += Get-Process -Id $c.ProcessId -ErrorAction SilentlyContinue } catch {}
                 }
-                # Sinon on continue de chercher dans les enfants
-                $parents = $children.ProcessId;
+            } catch {}
+
+            # 2. Le "Gagnant" est celui qui utilise le plus de mémoire (Le serveur Java)
+            foreach ($p in $candidates) {
+                if ($p.WorkingSet -gt $maxRam) {
+                    $maxRam = $p.WorkingSet
+                    $targetPid = $p.Id
+                }
             }
 
-            # On récupère les stats du PID trouvé (Java ou le parent si pas trouvé)
-            Get-CimInstance -ClassName Win32_PerfFormattedData_PerfProc_Process -Filter "IDProcess = $target" | Select-Object PercentProcessorTime, WorkingSetPrivate | ConvertTo-Json
-        `;
-        
-        const ps = spawn('powershell.exe', ['-NoProfile', '-Command', psCommand]);
-        let data = '';
-
-        ps.stdout.on('data', (chunk) => { data += chunk; });
-        
-        ps.on('close', (code) => {
-            if (code !== 0 || !data.trim()) { resolve(null); return; }
+            # 3. Récupération CPU (WMI) et RAM (Process) pour le gagnant
             try {
-                const json = JSON.parse(data);
-                const stat = Array.isArray(json) ? json[0] : json;
-                if (!stat) { resolve(null); return; }
+                $cpuObj = Get-CimInstance -ClassName Win32_PerfFormattedData_PerfProc_Process -Filter "IDProcess = $targetPid"
+                $cpu = 0
+                if ($cpuObj) { $cpu = $cpuObj.PercentProcessorTime }
                 
-                resolve({
-                    cpu: stat.PercentProcessorTime || 0,
-                    memory: stat.WorkingSetPrivate || 0
-                });
-            } catch (e) { resolve(null); }
-        });
-        ps.on('error', () => resolve(null));
+                # Sortie JSON
+                @{ cpu = $cpu; ram = $maxRam } | ConvertTo-Json -Compress
+            } catch {
+                # En cas d'échec total
+                @{ cpu = 0; ram = 0 } | ConvertTo-Json -Compress
+            }
+        `;
+
+        const psPath = 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+
+        try {
+            const ps = spawn(psPath, ['-NoProfile', '-Command', psScript]);
+            let output = '';
+
+            ps.stdout.on('data', (data) => { output += data.toString(); });
+            
+            ps.on('close', () => {
+                try {
+                    if (!output.trim()) { resolve(null); return; }
+                    const stats = JSON.parse(output);
+                    
+                    resolve({
+                        // Normalisation du CPU par le nombre de cœurs (Task Manager style)
+                        cpu: stats.cpu / (os.cpus().length || 1),
+                        // Conversion Bytes -> MB
+                        memory: stats.ram / 1024 / 1024
+                    });
+                } catch (e) {
+                    resolve(null);
+                }
+            });
+            
+            ps.on('error', () => resolve(null)); // Sécurité
+        } catch (e) {
+            resolve(null);
+        }
     });
 }
 
-// 2. Gestionnaire principal du processus serveur
+// 2. Gestionnaire principal (Logs + Stats + Events)
 function setupServerProcessHandlers() {
-    // Nettoyage de sécurité
+    // Nettoyage sécurité
     if (statsInterval) { clearTimeout(statsInterval); statsInterval = null; }
 
     // --- BOUCLE DE STATS ---
@@ -860,117 +880,94 @@ function setupServerProcessHandlers() {
             let data = { cpu: 0, memory: 0 };
 
             if (process.platform === 'win32') {
-                // Windows : Recherche récursive via PowerShell
-                const stats = await getStatsWindows(serverProcess.pid);
+                // Utilisation de notre fonction PowerShell maison
+                const stats = await getStatsNative(serverProcess.pid);
                 if (stats) {
-                    data = { 
-                        cpu: stats.cpu / (numCores || 1), 
-                        memory: stats.memory / 1024 / 1024 
-                    };
+                    data = stats;
                 }
             } else {
-                // Linux/Mac : pidusage standard
-                try {
-                    const stats = await pidusage(serverProcess.pid);
-                    data = { 
-                        cpu: stats.cpu / (numCores || 1), 
-                        memory: stats.memory / 1024 / 1024 
-                    };
-                } catch(e) {}
+                // Fallback Linux/Mac (Basic ps command logic could go here, keeping simple for now)
+                // Si vous êtes sur Linux, on peut ajouter une commande 'ps' ici si besoin.
             }
 
-            // Envoi aux interfaces
+            // Envoi des données (PC et Mobile)
             if (mainWindow && !mainWindow.isDestroyed()) {
                 mainWindow.webContents.send('server-stats', data);
             }
             if (io) io.emit('server-stats', data);
 
         } catch (err) {
-            // Silence en cas d'erreur de stats pour ne pas spammer
+            // Silence
         } finally {
-            // Relance dans 2 secondes
+            // Relance toutes les 1.5 secondes
             if (serverProcess && !serverProcess.killed) {
-                statsInterval = setTimeout(updateStatsLoop, 2000); 
+                statsInterval = setTimeout(updateStatsLoop, 1500);
             }
         }
     };
 
     updateStatsLoop();
 
-    // --- GESTION DES LOGS (Correction du bug lineBuffer) ---
+    // --- GESTION DES LOGS ---
     let serverReady = false;
-    let lineBuffer = ''; // <--- C'est la variable qui manquait !
+    let lineBuffer = '';
 
-    serverProcess.on('error', (error) => { sendToConsole(`❌ Erreur process: ${error.message}`); });
-
-    serverProcess.stdin.on('error', (e) => { 
-        if (e.code !== 'EPIPE') console.error('Erreur stdin:', e);
+    serverProcess.on('error', (err) => {
+        sendToConsole(`❌ Erreur processus : ${err.message}`);
     });
-    
+
     serverProcess.stdout.on('data', (data) => {
-        const rawChunk = data.toString();
-        const rawLower = rawChunk.toLowerCase();
+        const chunk = data.toString();
         
-        if (!serverReady && (rawLower.includes('done') || rawLower.includes('for help, type'))) {
+        // Détection "Serveur Prêt"
+        if (!serverReady && (chunk.toLowerCase().includes('done') || chunk.toLowerCase().includes('help, type'))) {
             serverReady = true;
             if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('server-ready');
-            sendToConsole('✅ SYSTÈME: Démarrage confirmé !');
-            if (mainWindow && (mainWindow.isMinimized() || !mainWindow.isFocused())) {
-                new Notification({ title: 'Serveur Prêt !', body: `Le serveur '${currentServerName}' est en ligne.`, icon: path.join(__dirname, 'logo.png') }).show();
-            }
+            sendToConsole('✅ SYSTÈME: Serveur en ligne !');
         }
 
-        lineBuffer += rawChunk;
-        // On traite ligne par ligne
+        lineBuffer += chunk;
         if (lineBuffer.includes('\n')) {
             const lines = lineBuffer.split('\n');
-            lineBuffer = lines.pop(); // On garde le reste pour le prochain tour
+            lineBuffer = lines.pop(); // Garder le fragment
+            
             for (const line of lines) {
-                if (line.trim() === '') continue;
+                if (!line.trim()) continue;
                 sendToConsole(line);
-                
-                // Détection Joueurs (Compatible Geyser/Bedrock)
-// On remplace \w+ par [\w.* ]+ pour accepter les points, étoiles et espaces des noms Bedrock
-const joinMatch = line.match(/:\s*([\w.* ]+)\s+joined the game/);
-if (joinMatch) {
-    // .trim() est ajouté pour nettoyer les espaces éventuels autour du nom
-    const playerName = joinMatch[1].trim(); 
-    if (mainWindow) mainWindow.webContents.send('player-joined', playerName);
-    if (io) io.emit('player-event', { type: 'join', name: playerName });
-}
 
-const leaveMatch = line.match(/:\s*([\w.* ]+)\s+left the game/);
-if (leaveMatch) {
-    const playerName = leaveMatch[1].trim();
-    if (mainWindow) mainWindow.webContents.send('player-left', playerName);
-    if (io) io.emit('player-event', { type: 'leave', name: playerName });
-}
+                // Détection Joueurs (Regex améliorée pour Geyser/Bedrock)
+                const joinMatch = line.match(/:\s*([\w.* ]+?)\s+joined the game/);
+                if (joinMatch) {
+                    const pName = joinMatch[1].trim();
+                    if (mainWindow) mainWindow.webContents.send('player-joined', pName);
+                    if (io) io.emit('player-event', { type: 'join', name: pName });
+                }
+
+                const leaveMatch = line.match(/:\s*([\w.* ]+?)\s+left the game/);
+                if (leaveMatch) {
+                    const pName = leaveMatch[1].trim();
+                    if (mainWindow) mainWindow.webContents.send('player-left', pName);
+                    if (io) io.emit('player-event', { type: 'leave', name: pName });
+                }
             }
         }
     });
-    
+
     serverProcess.stderr.on('data', (data) => {
-        const txt = data.toString();
-        if(txt.trim()) sendToConsole(txt);
+        sendToConsole(data.toString());
     });
-    
+
     serverProcess.on('close', (code) => {
-        sendToConsole(code === 0 ? '✅ Serveur arrêté proprement' : `⚠️ Serveur arrêté (Code: ${code})`);
-        
-        if (statsInterval) { clearTimeout(statsInterval); statsInterval = null; }
-        if (currentServerPath) { clearScheduledTasks(currentServerPath); currentServerPath = null; currentServerName = "Serveur"; }
+        sendToConsole(code === 0 ? '✅ Serveur arrêté.' : `⚠️ Arrêt (Code: ${code})`);
+        if (statsInterval) clearTimeout(statsInterval);
+        if (currentServerPath) { clearScheduledTasks(currentServerPath); currentServerPath = null; }
         
         serverProcess = null;
-        
         if (mainWindow) mainWindow.webContents.send('global-server-state', 'stopped');
         if (io) io.emit('server-state', 'stopped');
         sendServerStopped();
     });
 }
-
-// ==================================================================
-//  FIN DU BLOC DE REMPLACEMENT
-// ==================================================================
 
 // ========================================
 // TÂCHES PLANIFIÉES
@@ -1393,10 +1390,56 @@ socket.on('select-server', (path) => {
         socket.emit('log-update', '🛠️ Réglages appliqués.');
     });
 
-    // 8. JOUEURS
-    socket.on('get-players', () => {
+    // --- COMMANDES JOUEURS AMÉLIORÉES ---
+    
+    // 8. RÉCUPÉRATION DES LISTES
+    socket.on('get-players', async () => {
         if (!isAuthenticated) return;
+        
+        // Liste Online
         if (mainWindow) mainWindow.webContents.send('request-player-list');
+
+        // Whitelist & Banlist
+        const targetPath = currentServerPath || mobileCurrentPath;
+        if (targetPath) {
+            try {
+                const whitelist = await handleGetWhitelist(null, targetPath);
+                const banlist = await handleGetBanlist(null, targetPath);
+                socket.emit('player-lists-data', { whitelist, banlist });
+            } catch (e) { console.error(e); }
+        }
+    });
+
+    // 9. ACTIONS JOUEURS (L'Arsenal)
+    socket.on('player-action', (data) => {
+        if (!isAuthenticated || !serverProcess) return;
+        
+        const { action, target } = data;
+        let cmd = '';
+
+        switch(action) {
+            case 'kick': cmd = `kick ${target} Tu as été kick`; break;
+            case 'ban': cmd = `ban ${target} Tu es Banni`; break;
+            case 'unban': cmd = `pardon ${target}`; break; // Le fameux Unban
+            case 'op': cmd = `op ${target}`; break;
+            case 'deop': cmd = `deop ${target}`; break; // Le Deop
+            case 'gm-s': cmd = `gamemode survival ${target}`; break;
+            case 'gm-c': cmd = `gamemode creative ${target}`; break;
+            case 'gm-sp': cmd = `gamemode spectator ${target}`; break;
+            case 'kill': cmd = `kill ${target}`; break;
+            case 'tp-spawn': cmd = `tp ${target} 0 100 0`; break;
+        }
+
+        if (cmd) {
+            handleSendCommand(null, cmd);
+            socket.emit('log-update', `📱 Action: /${cmd}`);
+            
+            // Rafraichissement auto des listes après 1s
+            setTimeout(() => {
+                if (mainWindow) mainWindow.webContents.send('request-player-list');
+                socket.emit('get-players'); // Pour whitelist/banlist
+            }, 1000);
+        }
     });
 
     // 9. TÉLÉPHONE DEMANDE LES VERSIONS
@@ -1609,3 +1652,82 @@ function saveAppSettings(settings) {
     } catch (e) { return false; }
 }
 
+// ==================================================================
+//  NOUVEAU : GESTIONNAIRE D'INSTALLATION (WIZARD)
+// ==================================================================
+
+async function handleInstallServer(event, options) {
+    const { version, type, path: installPath, isCrossPlay, name } = options;
+
+    try {
+        sendToConsole(`🛠️ Préparation de l'installation de ${name}...`);
+        ensureDirectoryExists(installPath);
+
+        // 1. Sauvegarde dans la liste
+        saveServerToList({
+            folderPath: installPath,
+            versionId: version,
+            type: type,
+            name: name,
+            autoRestart: false,
+            autoBackup: false
+        });
+
+        // 2. Création EULA
+        fs.writeFileSync(path.join(installPath, 'eula.txt'), 'eula=true');
+
+        // 3. Téléchargement du Cœur
+        let downloadUrl = '';
+        let jarName = '';
+
+        if (type === 'paper') {
+            downloadUrl = await getPaperDownloadUrl(version);
+            jarName = 'paper-server.jar';
+        } else if (type === 'vanilla') {
+            const versions = await handleGetVersions();
+            const vData = versions.find(v => v.id === version);
+            if (vData) downloadUrl = await getVanillaDownloadUrl(vData.url);
+            jarName = 'server.jar';
+        } else if (type === 'forge') {
+            downloadUrl = await getForgeDownloadUrl(version);
+            jarName = 'forge-installer.jar';
+        } else if (type === 'neoforge') {
+            downloadUrl = await getNeoForgeDownloadUrl(version);
+            jarName = 'neoforge-installer.jar';
+        } else if (type === 'fabric') {
+            downloadUrl = await getFabricDownloadUrl(version);
+            jarName = 'fabric-server.jar';
+        }
+
+        if (!downloadUrl) throw new Error("Impossible de trouver l'URL de téléchargement.");
+
+        sendToConsole(`📥 Téléchargement du fichier serveur (${type})...`);
+        await downloadFile(downloadUrl, path.join(installPath, jarName));
+
+        // 4. Installation Cross-Play (Geyser)
+        if (isCrossPlay) {
+            if (mainWindow) mainWindow.webContents.send('console-log', 'Cross-Play: Ajout de GeyserMC (Bedrock Support)...');
+            
+            // CORRECTION IMPORTANTE : on utilise installPath, pas serverPath
+            const pluginsDir = path.join(installPath, 'plugins');
+            ensureDirectoryExists(pluginsDir);
+
+            const geyserUrl = 'https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot';
+            const geyserDest = path.join(pluginsDir, 'Geyser-Spigot.jar');
+
+            try {
+                await downloadFile(geyserUrl, geyserDest);
+                if (mainWindow) mainWindow.webContents.send('console-log', '✅ GeyserMC installé avec succès.');
+            } catch (err) {
+                console.error("Erreur Geyser:", err);
+                if (mainWindow) mainWindow.webContents.send('console-log', '⚠️ ECHEC du téléchargement de Geyser. Le serveur fonctionnera en mode Java uniquement.');
+            }
+        }
+
+        return { success: true };
+
+    } catch (error) {
+        console.error("Erreur Install:", error);
+        return { success: false, error: error.message };
+    }
+}

@@ -168,7 +168,8 @@ const STATE = {
     connectedPlayers: [],
     wizardActive: false,
     wizardStepsVisited: new Set(),
-    statsSum: { cpu: 0, ram: 0, count: 0 }
+    statsSum: { cpu: 0, ram: 0, count: 0 },
+    isCrossPlay: false
 };
 
 const DEFAULT_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAIlSURBVHhe7ZvtbcMwDITpIv0oXaQfTYfpR+kivWg/CmQ7Cxw4siU9HxCHCwwG+0Gync+Xuw/8Pc/z9eXz/P7+S6/X6+V8Pp/u9/vpb/y2bdtpvV6n5/N5ut1up9/xO7/X9/l8vqf3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f1+v6f3+/30cDj86nf8zu/1/X6/p/f7/fRwOPzqd/zO7/X9fr+n9/v99HA4/Op3/M7v9f3/P//+A4I+m74a8A3RAAAAAElFTkSuQmCC';
@@ -352,10 +353,72 @@ function openServerSelector() {
 // LOGIQUE DE L'ASSISTANT (WIZARD)
 // ========================================
 
+function renderWizardStartScreen() {
+    const configTab = document.getElementById('config');
+    if (!configTab) return;
+
+    // 1. On vérifie si l'écran existe déjà, sinon on le crée
+    let choiceScreen = document.getElementById('wizard-choice-screen');
+    if (!choiceScreen) {
+        choiceScreen = document.createElement('div');
+        choiceScreen.id = 'wizard-choice-screen';
+        choiceScreen.style.cssText = 'display:flex; gap:20px; justify-content:center; align-items:stretch; height:100%; padding:20px;';
+        configTab.appendChild(choiceScreen);
+    }
+
+    // 2. On injecte le contenu HTML avec vos textes
+    choiceScreen.innerHTML = `
+        <div id="btn-wizard-java" class="wizard-card" style="flex:1; background:var(--bg-card); border:2px solid var(--border-color); border-radius:8px; padding:20px; cursor:pointer; transition:0.3s; display:flex; flex-direction:column; align-items:center;">
+            <div style="font-size:3em; margin-bottom:15px; color:#4CAF50;"><i class="fas fa-desktop"></i></div>
+            <h3 style="margin:0 0 10px 0;">Java Edition</h3>
+            <p style="color:#888; text-align:center; margin-bottom:20px;">L'expérience classique sur PC.</p>
+            
+            <div class="wizard-details">
+                <div class="detail-row pro"><i class="fas fa-check"></i> <span>Mods infinis (Forge, Fabric...)</span></div>
+                <div class="detail-row pro"><i class="fas fa-check"></i> <span>Stabilité maximale</span></div>
+                <div class="detail-row pro"><i class="fas fa-check"></i> <span>Moins de bugs</span></div>
+                <div class="detail-row con"><i class="fas fa-times"></i> <span>Joueurs PC uniquement</span></div>
+            </div>
+            
+            <button class="btn-primary" style="margin-top:auto; width:100%;">Choisir Java</button>
+        </div>
+
+        <div id="btn-wizard-cross" class="wizard-card" style="flex:1; background:var(--bg-card); border:2px solid var(--border-color); border-radius:8px; padding:20px; cursor:pointer; transition:0.3s; display:flex; flex-direction:column; align-items:center;">
+            <div style="font-size:3em; margin-bottom:15px; color:#2196F3;"><i class="fas fa-globe"></i></div>
+            <h3 style="margin:0 0 10px 0;">Cross-Play</h3>
+            <p style="color:#888; text-align:center; margin-bottom:20px;">PC + Consoles + Mobiles.</p>
+            
+            <div class="wizard-details">
+                <div class="detail-row pro"><i class="fas fa-check"></i> <span>Tout le monde peut jouer</span></div>
+                <div class="detail-row pro"><i class="fas fa-gamepad"></i> <span>Compatible PS4/5, Xbox, Switch, Tel</span></div>
+                <div class="detail-row con"><i class="fas fa-exclamation-triangle"></i> <span>Pas de mods complexes (ex: Create)</span></div>
+                <div class="detail-row con"><i class="fas fa-exclamation-triangle"></i> <span>Risque de petits bugs visuels</span></div>
+            </div>
+
+            <button class="btn-primary" style="margin-top:auto; width:100%;">Choisir Cross-Play</button>
+        </div>
+    `;
+
+    // 3. Effets de survol (Hover) pour faire joli
+    const cards = choiceScreen.querySelectorAll('.wizard-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', () => { 
+            card.style.transform = 'translateY(-5px)'; 
+            card.style.borderColor = 'var(--primary-color)'; 
+            card.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
+        });
+        card.addEventListener('mouseleave', () => { 
+            card.style.transform = 'translateY(0)'; 
+            card.style.borderColor = 'var(--border-color)';
+            card.style.boxShadow = 'none';
+        });
+    });
+}
+
 function prepareNewServerCreation() {
     // 1. Reset visuel
     if (DOM.currentServerName) {
-        DOM.currentServerName.innerHTML = '<i class="fas fa-plus"></i> Nouveau Serveur (En cours...)';
+        DOM.currentServerName.innerHTML = '<i class="fas fa-plus"></i> Nouveau Serveur';
         DOM.currentServerName.style.color = "var(--text-secondary)";
     }
 
@@ -364,116 +427,31 @@ function prepareNewServerCreation() {
     if (DOM.serverName) DOM.serverName.value = '';
     if (DOM.javaPathInput) DOM.javaPathInput.value = '';
     if (DOM.serverIconPreview) DOM.serverIconPreview.src = DEFAULT_ICON;
+    STATE.isCrossPlay = false; // Reset du mode
 
     // 3. INITIALISER LE MODE WIZARD
     STATE.wizardActive = true;
     STATE.wizardStepsVisited.clear();
-    STATE.wizardStepsVisited.add('config'); // On commence ici
+    STATE.wizardStepsVisited.add('config');
 
-    // Cacher le bouton "Créer" statique pour éviter la confusion
+    // Cacher le bouton "Créer" statique
     if(DOM.btnSave) DOM.btnSave.style.display = 'none';
 
     // Afficher le bouton flottant
     updateWizardButton('config');
     DOM.btnWizardNext.style.display = 'flex';
 
-    // 4. Navigation vers le début
+    // 4. Navigation vers l'onglet config
     const configTabBtn = document.querySelector('[data-tab="config"]');
     if (configTabBtn) configTabBtn.click();
+
+    // --- MAGIE ICI : ON INJECTE L'INTERFACE DE CHOIX ---
+    renderWizardStartScreen(); 
+    // ---------------------------------------------------
 
     // 5. Désactiver Start
     if (DOM.btnStart) DOM.btnStart.disabled = true;
     if (DOM.statusText) DOM.statusText.textContent = 'Configuration...';
-}
-
-// Connecter le clic du bouton flottant
-if(DOM.btnWizardNext) {
-    DOM.btnWizardNext.addEventListener('click', handleWizardNextStep);
-}
-
-function handleWizardNextStep() {
-    // Détermine l'onglet actuel
-    const currentTab = document.querySelector('.tab-content.active').id;
-    STATE.wizardStepsVisited.add(currentTab); // Marquer comme fait
-
-    let nextTabId = '';
-
-    switch (currentTab) {
-        case 'config':
-            // Validation minimale avant de passer à la suite
-            if (!DOM.serverFolder.value || !DOM.serverName.value) {
-                window.MCServerManager.showAlert("Configuration", "Veuillez choisir un nom et un dossier avant de continuer.");
-                return;
-            }
-            // On sauvegarde silencieusement la config de base
-            saveServerConfig(); 
-            nextTabId = 'performance';
-            break;
-
-        case 'performance':
-            nextTabId = 'backups';
-            break;
-
-        case 'backups':
-            // Condition pour Add-ons : Seulement si PAS vanilla
-            const type = STATE.selectedServerType || 'vanilla';
-            if (type !== 'vanilla') {
-                nextTabId = 'addons';
-            } else {
-                nextTabId = 'worlds';
-            }
-            break;
-
-        case 'addons':
-            nextTabId = 'worlds';
-            break;
-
-        case 'worlds':
-            finishWizard();
-            return; // On arrête ici
-    }
-
-    // Navigation
-    if (nextTabId) {
-        const targetBtn = document.querySelector(`[data-tab="${nextTabId}"]`);
-        if (targetBtn) targetBtn.click();
-        updateWizardButton(nextTabId);
-    }
-}
-
-function updateWizardButton(stepId) {
-    if (!DOM.btnWizardNext) return;
-    
-    // Par défaut
-    DOM.btnWizardNext.innerHTML = '<span>Étape Suivante</span> <i class="fas fa-arrow-right"></i>';
-    DOM.btnWizardNext.style.background = 'var(--primary-color)';
-
-    // Cas spécifiques
-    if (stepId === 'worlds') {
-        DOM.btnWizardNext.innerHTML = '<span>Terminer la configuration</span> <i class="fas fa-check"></i>';
-        DOM.btnWizardNext.style.background = '#2196F3'; // Bleu pour la fin
-    }
-}
-
-function finishWizard() {
-    STATE.wizardActive = false;
-    DOM.btnWizardNext.style.display = 'none';
-    
-    // Réafficher le bouton statique "Créer" (même s'il ne sert plus à rien pour cette session)
-    if(DOM.btnSave) DOM.btnSave.style.display = 'block';
-
-    // Aller au dashboard
-    const dashBtn = document.querySelector('[data-tab="dashboard"]');
-    if (dashBtn) dashBtn.click();
-
-    // Activer le bouton Start
-    if (DOM.btnStart) {
-        DOM.btnStart.disabled = false;
-        DOM.btnStart.textContent = 'LANCER LE SERVEUR';
-    }
-    if (DOM.statusText) DOM.statusText.textContent = 'Prêt';
-
-    window.MCServerManager.showAlert("Terminé", "La configuration est terminée ! Vous pouvez lancer le serveur.");
 }
 
 function selectServer(server) {
@@ -727,57 +705,80 @@ function initializeServerControls() {
     if (DOM.btnStart) DOM.btnStart.addEventListener('click', startServer);
     if (DOM.btnStop) DOM.btnStop.addEventListener('click', stopServer);
     if (DOM.btnDiscord) DOM.btnDiscord.addEventListener('click', () => window.api.openExternal('https://discord.gg/wCCRbr6MP5'));
-    // VVVV MODIFICATION ICI VVVV
+    
     if (DOM.btnPaypal) DOM.btnPaypal.addEventListener('click', () => {
-        // J'ai corrigé le nom de la fonction (openExternal) et ajouté https://
         window.api.openExternal('https://www.paypal.me/MCMANAGEROWNER'); 
-        window.api.openExternalLink('PayPal.me/MCMANAGEROWNER'); 
     });
 
     if (DOM.btnImportServer) DOM.btnImportServer.addEventListener('click', importExistingServer);
     
     if (DOM.btnOpenSelector) DOM.btnOpenSelector.addEventListener('click', openServerSelector);
     if (DOM.closeSelector) DOM.closeSelector.addEventListener('click', () => DOM.serverSelectorModal.style.display = 'none');
+    
+    // Fermeture modale au clic extérieur
     window.addEventListener('click', (e) => { if (e.target === DOM.serverSelectorModal) DOM.serverSelectorModal.style.display = 'none'; });
     
     if (DOM.serverIconWrapper) DOM.serverIconWrapper.addEventListener('click', changeIconConfig);
+
+    // --- CORRECTION : AJOUT DU LISTENER WIZARD ICI ---
+    if (DOM.btnWizardNext) {
+        // On supprime d'abord les anciens listeners pour éviter les doublons (méthode propre)
+        const newBtn = DOM.btnWizardNext.cloneNode(true);
+        DOM.btnWizardNext.parentNode.replaceChild(newBtn, DOM.btnWizardNext);
+        DOM.btnWizardNext = newBtn; 
+        
+        // On attache le bon listener
+        DOM.btnWizardNext.addEventListener('click', handleWizardNextStep);
+    }
 }
 
 function initializePropertiesModal() {
-    // 1. Ouvrir la modale (avec vérification)
+    // 1. Ouvrir la modale
     if (DOM.btnOpenProperties) {
         DOM.btnOpenProperties.addEventListener('click', async () => {
             const serverPath = DOM.serverFolder.value;
-            
-            // Pas de dossier sélectionné
             if (!serverPath) {
-                window.MCServerManager.showAlert("Erreur", "Veuillez d'abord sélectionner ou créer un dossier serveur.");
+                showAlert("Erreur", "Veuillez d'abord sélectionner un serveur.");
                 return;
             }
 
-            // Vérification existence fichier server.properties
-            // On tente de le lire. Si l'objet est vide, c'est qu'il n'existe pas ou est vide.
             try {
+                // Lecture du fichier
                 const props = await window.api.readServerProps(serverPath);
                 
-                // Si l'objet est vide (pas de propriétés), on suppose que le serveur n'a jamais été lancé
+                // Si vide ou inexistant
                 if (!props || Object.keys(props).length === 0) {
-                    window.MCServerManager.showAlert(
-                        "Fichier manquant", 
-                        "Le fichier `server.properties` n'est pas encore généré.\n\nLancez le serveur au moins une fois pour qu'il se crée, puis revenez ici."
-                    );
+                    showAlert("Fichier manquant", "Le fichier server.properties n'existe pas encore. Lancez le serveur une fois pour le créer.");
                     return;
                 }
 
-                // Tout est bon, on charge l'éditeur et on ouvre
-                renderPropertiesForm(props); // Votre ancienne fonction existante
+                renderPropertiesForm(props);
                 DOM.propertiesModal.style.display = 'block';
 
             } catch (e) {
-                window.MCServerManager.showAlert("Erreur", "Impossible de vérifier le fichier : " + e.message);
+                showAlert("Erreur", "Impossible de lire les propriétés : " + e.message);
             }
         });
     }
+
+    // 2. Fermer la modale
+    if (DOM.closePropertiesModal) {
+        DOM.closePropertiesModal.addEventListener('click', () => DOM.propertiesModal.style.display = 'none');
+    }
+
+    // 3. BOUTON SAUVEGARDER (Correction ici)
+    if (DOM.btnSavePropertiesModal) {
+        // On clone le bouton pour supprimer les anciens écouteurs (anti-doublon)
+        const newBtn = DOM.btnSavePropertiesModal.cloneNode(true);
+        DOM.btnSavePropertiesModal.parentNode.replaceChild(newBtn, DOM.btnSavePropertiesModal);
+        DOM.btnSavePropertiesModal = newBtn; // Mise à jour de la référence DOM
+
+        DOM.btnSavePropertiesModal.addEventListener('click', async () => {
+            console.log("💾 Clic sur Enregistrer...");
+            await saveServerPropertiesFromModal();
+        });
+    }
+
 
     // 2. Fermer la modale
     if (DOM.closePropertiesModal) {
@@ -799,27 +800,36 @@ async function saveServerPropertiesFromModal() {
     const serverPath = DOM.serverFolder.value;
     if (!serverPath) return;
 
+    // Changement visuel du bouton pour montrer que ça charge
+    const btn = DOM.btnSavePropertiesModal;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
+
     try {
         const newProps = {};
-        // On récupère simplement tous les inputs générés qui ont l'attribut data-key
         const inputs = document.getElementById('properties-editor-container').querySelectorAll('[data-key]');
         
         inputs.forEach(input => {
             newProps[input.dataset.key] = input.value;
         });
 
-        // NOTE : On ne récupère plus DOM.renderSlider manuellement ici car 'view-distance' 
-        // fait maintenant partie de la boucle 'inputs' ci-dessus.
-
+        console.log("Envoi des nouvelles propriétés :", newProps);
         const result = await window.api.saveServerProps(serverPath, newProps);
         
         if (result.success) {
-            window.MCServerManager.showAlert('Succès', 'Configuration enregistrée ! Redémarrez le serveur pour appliquer.');
+            DOM.propertiesModal.style.display = 'none'; // On ferme d'abord
+            showAlert('Succès', 'Configuration sauvegardée ! Redémarrez le serveur pour appliquer.');
         } else {
             throw new Error(result.error);
         }
     } catch (e) {
-        window.MCServerManager.showAlert('Erreur', e.message);
+        console.error(e);
+        showAlert('Erreur', "Échec de la sauvegarde : " + e.message);
+    } finally {
+        // Rétablissement du bouton
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     }
 }
 
@@ -835,77 +845,63 @@ async function changeIconConfig() {
 }
 
 async function startServer() {
+    // 1. Reset visuel des stats
     if (DOM.statsContainer) DOM.statsContainer.style.display = 'none'; 
-    const config = getServerConfig();
     
+    // 2. Récupération de la config
+    const config = getServerConfig();
     if (!config.folderPath) { showAlert('Attention', 'Sélectionnez un dossier.'); return; }
 
-    // --- VERIFICATION WIZARD (PRO WARNING) ---
+    // 3. Vérification Wizard (Si l'utilisateur a sauté des étapes)
     if (STATE.wizardActive) {
-        // Le wizard est toujours actif, donc l'utilisateur a sauté des étapes
         const requiredSteps = ['performance', 'backups', 'worlds'];
-        // On ajoute addons si nécessaire
         if (config.type !== 'vanilla') requiredSteps.push('addons');
 
         const missedSteps = requiredSteps.filter(step => !STATE.wizardStepsVisited.has(step));
 
         if (missedSteps.length > 0) {
-            // Traduction des ID en noms propres
-            const stepNames = {
-                'performance': 'Performances',
-                'backups': 'Sauvegardes',
-                'addons': 'Add-ons',
-                'worlds': 'Gestion des Mondes'
-            };
-            const prettyMissed = missedSteps.map(s => stepNames[s]).join(', ');
-
             const confirm = await confirmAction(
-                "⚠️ Configuration Incomplète", 
-                `Vous êtes sur le point de lancer le serveur sans avoir vérifié les étapes suivantes : \n\n[ ${prettyMissed} ]\n\nSouhaitez-vous vraiment procéder avec les paramètres par défaut ?`
+                "Configuration Incomplète", 
+                "Vous n'avez pas validé toutes les étapes. Lancer avec les paramètres par défaut ?"
             );
-
-            if (!confirm) return; // L'utilisateur annule
-            
-            // S'il confirme, on désactive le wizard pour ne plus l'embêter
-            finishWizard(); // Cela va aussi rediriger vers le dashboard, mais on continue l'exécution
-            // On attend un petit peu que l'UI se mette à jour
+            if (!confirm) return;
+            finishWizard(); // Force la fin du wizard
             await new Promise(r => setTimeout(r, 500));
         }
     }
-    // ------------------------------------------
 
-    STATE.serverRunning = true; STATE.serverIsReady = false;
-    if (DOM.btnStart) { DOM.btnStart.disabled = true; DOM.btnStart.textContent = 'LANCEMENT...'; }
-    if (DOM.btnStop) DOM.btnStop.disabled = false; if (DOM.commandInput) DOM.commandInput.disabled = false; if (DOM.btnSend) DOM.btnSend.disabled = false;
-    if (DOM.consoleOutput) DOM.consoleOutput.innerHTML = '';
-    if (DOM.statusDot) DOM.statusDot.className = 'dot orange'; if (DOM.statusText) DOM.statusText.textContent = 'Démarrage...';
-    
-    logToConsole('=== DÉMARRAGE ===');
-    window.api.startServer(config);
-    setTimeout(() => { loadSavedServers(config.folderPath); }, 1000);
-}
+    // 4. Mise à jour de l'état
+    STATE.serverRunning = true; 
+    STATE.serverIsReady = false;
 
-// ... à l'intérieur de startServer() ...
-
-    STATE.serverRunning = true; STATE.serverIsReady = false;
-
-    // --- AJOUT : RESET DES MOYENNES & GRAPHIQUE ---
+    // Reset des moyennes et du graphique
     STATE.statsSum = { cpu: 0, ram: 0, count: 0 };
     if (document.getElementById('avg-cpu-display')) {
         document.getElementById('avg-cpu-display').textContent = '0.0%';
         document.getElementById('avg-ram-display').textContent = '0 MB';
     }
-    // Optionnel : On remet le graphique à plat pour que ce soit cohérent
-    if (pcChartInstance) {
-        pcChartInstance.data.datasets.forEach(dataset => {
-            dataset.data.fill(0);
-        });
-        pcChartInstance.update();
+    if (window.pcChartInstance) {
+        window.pcChartInstance.data.datasets.forEach(dataset => dataset.data.fill(0));
+        window.pcChartInstance.update();
     }
-    // ----------------------------------------------
 
+    // 5. Interface
     if (DOM.btnStart) { DOM.btnStart.disabled = true; DOM.btnStart.textContent = 'LANCEMENT...'; }
-// ... suite du code ...
+    if (DOM.btnStop) DOM.btnStop.disabled = false; 
+    if (DOM.commandInput) DOM.commandInput.disabled = false; 
+    if (DOM.btnSend) DOM.btnSend.disabled = false;
+    if (DOM.consoleOutput) DOM.consoleOutput.innerHTML = '';
+    if (DOM.statusDot) DOM.statusDot.className = 'dot orange'; 
+    if (DOM.statusText) DOM.statusText.textContent = 'Démarrage...';
+    
+    logToConsole('=== DÉMARRAGE ===');
+
+    // 6. ENVOI DE LA COMMANDE AU MAIN (C'est cette ligne qui vous manquait !)
+    window.api.startServer(config);
+    
+    // 7. Petit refresh de la liste
+    setTimeout(() => { loadSavedServers(config.folderPath); }, 1000);
+}
 
 function stopServer() { 
     if (!STATE.serverRunning) return;
@@ -1312,13 +1308,21 @@ async function browseForFolder() {
     }
 }
 
-async function saveServerConfig() {
+async function saveServerConfig(isSilent = false) {
     const config = getServerConfig();
+    
+    // Validation de base pour la sauvegarde manuelle
     if (!config.folderPath || !config.name) {
-        showAlert('Erreur', 'Nom et dossier requis');
-        return;
+        if (!isSilent) showAlert('Erreur', 'Nom et dossier requis');
+        return false; // Indique que la sauvegarde a échoué
     }
-    showAlert('Ok', 'Configuration prête.');
+    
+    // Si ce n'est pas le Wizard qui appelle (isSilent = false), on affiche le succès
+    if (!isSilent) {
+        showAlert('Ok', 'Configuration prête.');
+    }
+    
+    return true; // Indique que la sauvegarde est OK
 }
 // V REMPLACEZ L'ANCIENNE FONCTION getServerConfig() PAR CELLE-CI V
 function getServerConfig(){ 
@@ -1355,16 +1359,155 @@ function getServerConfig(){
     
     return config;
 }
-function initializePublicMode(){ if(DOM.publicModeToggle){DOM.publicModeToggle.addEventListener('change',()=>{ if(DOM.navBtnPublic){ if(DOM.publicModeToggle.checked)DOM.navBtnPublic.classList.add('visible'); else DOM.navBtnPublic.classList.remove('visible'); } });} if(DOM.navBtnPublic)DOM.navBtnPublic.style.display='flex'; }
-function initializeBackups(){ if(DOM.btnCreateBackup)DOM.btnCreateBackup.addEventListener('click',createServerBackup); const t=document.querySelector('[data-tab="backups"]'); if(t)t.addEventListener('click',loadBackups); }
-async function createServerBackup(){ if(!DOM.serverFolder.value){showAlert('Erreur','Dossier ?');return;} const d=`backup-${new Date().toISOString().slice(0,10)}`; const n=await showInput("Nom :",d); if(n===null)return; const c=n.trim()||d; if(DOM.btnCreateBackup){DOM.btnCreateBackup.disabled=true;DOM.btnCreateBackup.textContent='...';} try{const r=await window.api.createBackup(DOM.serverFolder.value,c); if(r.success){showAlert('Ok',`Créé: ${r.path}`);loadBackups();}else showAlert('Erreur',r.error);}catch(e){}finally{if(DOM.btnCreateBackup){DOM.btnCreateBackup.disabled=false;DOM.btnCreateBackup.innerHTML='<i class="fas fa-plus"></i> CRÉER';}} }
-async function loadBackups(){ if(!DOM.serverFolder.value||!DOM.backupList)return; const b=await window.api.getBackups(DOM.serverFolder.value); DOM.backupList.innerHTML=''; if(!b||!b.length){DOM.backupList.innerHTML='<p style="text-align:center;color:#777;">Vide.</p>';return;} b.forEach(n=>{ const d=document.createElement('div'); d.style.cssText='display:flex;justify-content:space-between;align-items:center;background:var(--bg-card);padding:12px;margin-bottom:8px;border-radius:5px;border:1px solid var(--border-secondary);'; d.innerHTML=`<span style="font-family:monospace;">${n}</span><div style="display:flex;gap:10px;"><button class="btn-small btn-primary btn-restore"><i class="fas fa-undo"></i></button><button class="btn-small btn-danger btn-delete"><i class="fas fa-trash"></i></button></div>`; d.querySelector('.btn-restore').addEventListener('click',()=>restoreServerBackup(n)); d.querySelector('.btn-delete').addEventListener('click',()=>deleteServerBackup(n)); DOM.backupList.appendChild(d); }); }
-async function restoreServerBackup(n){ if(STATE.serverRunning){showAlert('Erreur','Stop serveur.');return;} if(await confirmAction('Restaurer',`Écraser avec ${n} ?`)){try{const r=await window.api.restoreBackup(DOM.serverFolder.value,n); if(r.success)showAlert('Ok','Restauré.'); else showAlert('Erreur',r.error);}catch(e){}} }
-async function deleteServerBackup(n){ if(await confirmAction('Supprimer',`Supprimer ${n} ?`)){try{const r=await window.api.deleteBackup(DOM.serverFolder.value,n); if(r.success)loadBackups(); else showAlert('Erreur',r.error);}catch(e){}} }
-async function importExistingServer(){ const p=await window.api.selectFolder(); if(!p)return; const r=await window.api.importServer(p); if(r.success){showAlert('Ok',`Importé: ${r.name}`); loadSavedServers();} else showAlert('Erreur',r.error); }
-function onPlayerJoined(n){ if(!STATE.connectedPlayers.includes(n)){STATE.connectedPlayers.push(n);updatePlayerList();} }
-function onPlayerLeft(n){ const i=STATE.connectedPlayers.indexOf(n); if(i>-1){STATE.connectedPlayers.splice(i,1);updatePlayerList();} }
-function onPlayerLeft(n){ const i=STATE.connectedPlayers.indexOf(n); if(i>-1){STATE.connectedPlayers.splice(i,1);updatePlayerList();} }
+
+function initializePublicMode() {
+    if (DOM.publicModeToggle) {
+        DOM.publicModeToggle.addEventListener('change', () => {
+            if (DOM.navBtnPublic) {
+                if (DOM.publicModeToggle.checked) {
+                    DOM.navBtnPublic.classList.add('visible');
+                } else {
+                    DOM.navBtnPublic.classList.remove('visible');
+                }
+            }
+        });
+    }
+    if (DOM.navBtnPublic) {
+        DOM.navBtnPublic.style.display = 'flex';
+    }
+}
+
+function initializeBackups() {
+    if (DOM.btnCreateBackup) {
+        DOM.btnCreateBackup.addEventListener('click', createServerBackup);
+    }
+    const t = document.querySelector('[data-tab="backups"]');
+    if (t) {
+        t.addEventListener('click', loadBackups);
+    }
+}
+
+async function createServerBackup() {
+    if (!DOM.serverFolder.value) {
+        showAlert('Erreur', 'Dossier ?');
+        return;
+    }
+
+    const d = `backup-${new Date().toISOString().slice(0, 10)}`;
+    const n = await showInput("Nom :", d);
+
+    if (n === null) return;
+
+    const c = n.trim() || d;
+
+    if (DOM.btnCreateBackup) {
+        DOM.btnCreateBackup.disabled = true;
+        DOM.btnCreateBackup.textContent = '...';
+    }
+
+    try {
+        const r = await window.api.createBackup(DOM.serverFolder.value, c);
+        if (r.success) {
+            showAlert('Ok', `Créé: ${r.path}`);
+            loadBackups();
+        } else {
+            showAlert('Erreur', r.error);
+        }
+    } catch (e) {
+        // Erreur silencieuse
+    } finally {
+        if (DOM.btnCreateBackup) {
+            DOM.btnCreateBackup.disabled = false;
+            DOM.btnCreateBackup.innerHTML = '<i class="fas fa-plus"></i> CRÉER';
+        }
+    }
+}
+
+async function loadBackups() {
+    if (!DOM.serverFolder.value || !DOM.backupList) return;
+
+    const b = await window.api.getBackups(DOM.serverFolder.value);
+    DOM.backupList.innerHTML = '';
+
+    if (!b || !b.length) {
+        DOM.backupList.innerHTML = '<p style="text-align:center;color:#777;">Vide.</p>';
+        return;
+    }
+
+    b.forEach(n => {
+        const d = document.createElement('div');
+        d.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:var(--bg-card);padding:12px;margin-bottom:8px;border-radius:5px;border:1px solid var(--border-secondary);';
+        d.innerHTML = `<span style="font-family:monospace;">${n}</span><div style="display:flex;gap:10px;"><button class="btn-small btn-primary btn-restore"><i class="fas fa-undo"></i></button><button class="btn-small btn-danger btn-delete"><i class="fas fa-trash"></i></button></div>`;
+
+        d.querySelector('.btn-restore').addEventListener('click', () => restoreServerBackup(n));
+        d.querySelector('.btn-delete').addEventListener('click', () => deleteServerBackup(n));
+
+        DOM.backupList.appendChild(d);
+    });
+}
+
+async function restoreServerBackup(n) {
+    if (STATE.serverRunning) {
+        showAlert('Erreur', 'Stop serveur.');
+        return;
+    }
+
+    if (await confirmAction('Restaurer', `Écraser avec ${n} ?`)) {
+        try {
+            const r = await window.api.restoreBackup(DOM.serverFolder.value, n);
+            if (r.success) {
+                showAlert('Ok', 'Restauré.');
+            } else {
+                showAlert('Erreur', r.error);
+            }
+        } catch (e) {
+            // Erreur silencieuse
+        }
+    }
+}
+
+async function deleteServerBackup(n) {
+    if (await confirmAction('Supprimer', `Supprimer ${n} ?`)) {
+        try {
+            const r = await window.api.deleteBackup(DOM.serverFolder.value, n);
+            if (r.success) {
+                loadBackups();
+            } else {
+                showAlert('Erreur', r.error);
+            }
+        } catch (e) {
+            // Erreur silencieuse
+        }
+    }
+}
+
+async function importExistingServer() {
+    const p = await window.api.selectFolder();
+    if (!p) return;
+
+    const r = await window.api.importServer(p);
+    if (r.success) {
+        showAlert('Ok', `Importé: ${r.name}`);
+        loadSavedServers();
+    } else {
+        showAlert('Erreur', r.error);
+    }
+}
+
+function onPlayerJoined(n) {
+    if (!STATE.connectedPlayers.includes(n)) {
+        STATE.connectedPlayers.push(n);
+        updatePlayerList();
+    }
+}
+
+function onPlayerLeft(n) {
+    const i = STATE.connectedPlayers.indexOf(n);
+    if (i > -1) {
+        STATE.connectedPlayers.splice(i, 1);
+        updatePlayerList();
+    }
+}
 
 // VVVV COLLEZ CETTE NOUVELLE FONCTION VVVV
 /**
@@ -2455,3 +2598,253 @@ async function initializeSettings() {
     }
 }
 
+// ==================================================================
+//  LOGIQUE COMPLETE DU WIZARD (NAVIGATION + CHOIX + SUIVANT)
+// ==================================================================
+
+// 1. Démarrage du processus (Remplace toute autre définition précédente)
+function prepareNewServerCreation() {
+    // Reset visuel
+    if (DOM.currentServerName) {
+        DOM.currentServerName.innerHTML = '<i class="fas fa-plus"></i> Nouveau Serveur';
+        DOM.currentServerName.style.color = "var(--text-secondary)";
+    }
+    if (DOM.serverFolder) DOM.serverFolder.value = '';
+    if (DOM.serverName) DOM.serverName.value = '';
+    // Reset image
+    if (DOM.serverIconPreview) DOM.serverIconPreview.src = DEFAULT_ICON;
+    
+    STATE.isCrossPlay = false;
+
+    // Activer le mode Wizard
+    STATE.wizardActive = true;
+    STATE.wizardStepsVisited.clear();
+    STATE.wizardStepsVisited.add('config');
+
+    // Gestion des boutons
+    if(DOM.btnSave) DOM.btnSave.style.display = 'none';
+    if(DOM.btnWizardNext) {
+        DOM.btnWizardNext.style.display = 'flex';
+        updateWizardButton('config');
+    }
+
+    // Aller sur l'onglet config
+    const configTabBtn = document.querySelector('[data-tab="config"]');
+    if (configTabBtn) configTabBtn.click();
+
+    // AFFICHER L'ÉCRAN DE CHOIX
+    const configTab = document.getElementById('config');
+    const choiceScreen = document.getElementById('wizard-choice-screen');
+    
+    if (configTab && choiceScreen) {
+        // Cacher les enfants directs sauf le choice screen
+        Array.from(configTab.children).forEach(child => {
+            if(child.id !== 'wizard-choice-screen') child.style.display = 'none';
+        });
+        choiceScreen.style.display = 'flex';
+        
+        // Attachement des clics sur les cartes
+        const btnJava = document.getElementById('btn-wizard-java');
+        const btnCross = document.getElementById('btn-wizard-cross');
+        // On utilise onclick pour éviter d'empiler les listeners si on ouvre plusieurs fois
+        if (btnJava) btnJava.onclick = () => selectWizardMode('java');
+        if (btnCross) btnCross.onclick = () => selectWizardMode('crossplay');
+    }
+    
+    // Désactiver Start pendant la config
+    if (DOM.btnStart) DOM.btnStart.disabled = true;
+    if (DOM.statusText) DOM.statusText.textContent = 'Configuration...';
+}
+
+// 2. Choix du mode
+function selectWizardMode(mode) {
+    const configTab = document.getElementById('config');
+    const choiceScreen = document.getElementById('wizard-choice-screen');
+
+    // Cacher l'écran de choix
+    if (choiceScreen) choiceScreen.style.display = 'none';
+
+    // Réafficher le formulaire
+    Array.from(configTab.children).forEach(child => {
+        if (child.id !== 'wizard-choice-screen') {
+            child.style.display = 'block'; 
+        }
+    });
+
+    // Appliquer le choix
+    if (mode === 'crossplay') {
+        STATE.isCrossPlay = true;
+        selectServerType('paper');
+        window.MCServerManager.showAlert("Mode Cross-Play", "Configuration auto : PaperMC + Geyser.");
+    } else {
+        STATE.isCrossPlay = false;
+        selectServerType('vanilla');
+    }
+}
+
+// 3. Logique du bouton "SUIVANT"
+function handleWizardNextStep() {
+    // 1. Identifier l'étape actuelle
+    const activeTab = document.querySelector('.tab-content.active');
+    if (!activeTab) return;
+    
+    const currentTabId = activeTab.id; 
+    let nextTabId = '';
+
+    // 2. Logique de validation et navigation
+    switch (currentTabId) {
+        case 'config':
+            // --- VALIDATION STRICTE ---
+            const folderVal = DOM.serverFolder.value ? DOM.serverFolder.value.trim() : '';
+            const nameVal = DOM.serverName.value ? DOM.serverName.value.trim() : '';
+
+            // Si vide, on HURLE (Alerte) et on ARRÊTE (return)
+            if (!folderVal) {
+                showAlert("Action impossible", "Vous devez sélectionner un dossier d'installation.");
+                return; 
+            }
+            if (!nameVal) {
+                showAlert("Action impossible", "Vous devez donner un nom à votre serveur.");
+                return;
+            }
+
+            // Si tout est bon, on sauvegarde SILENCIEUSEMENT (true)
+            saveServerConfig(true); 
+            
+            // On valide l'étape et on prépare la suite
+            STATE.wizardStepsVisited.add('config');
+            nextTabId = 'performance';
+            break;
+
+        case 'performance':
+            STATE.wizardStepsVisited.add('performance');
+            nextTabId = 'backups';
+            break;
+
+        case 'backups':
+            STATE.wizardStepsVisited.add('backups');
+            const type = STATE.selectedServerType || 'vanilla';
+            // Si Vanilla, on saute l'étape Addons
+            if (type === 'vanilla') {
+                nextTabId = 'worlds';
+            } else {
+                nextTabId = 'addons';
+            }
+            break;
+
+        case 'addons':
+            STATE.wizardStepsVisited.add('addons');
+            nextTabId = 'worlds';
+            break;
+
+        case 'worlds':
+            finishWizard();
+            return; 
+    }
+
+    // 3. Changement d'onglet
+    if (nextTabId) {
+        const targetBtn = document.querySelector(`[data-tab="${nextTabId}"]`);
+        if (targetBtn) {
+            targetBtn.click();
+            updateWizardButton(nextTabId);
+        } else {
+            // Fallback de sécurité
+            console.error("Onglet introuvable:", nextTabId);
+            if (nextTabId === 'worlds') finishWizard();
+        }
+    }
+}
+
+function updateWizardButton(stepId) {
+    if (!DOM.btnWizardNext) return;
+    
+    DOM.btnWizardNext.disabled = false;
+    DOM.btnWizardNext.style.display = 'flex';
+
+    if (stepId === 'worlds') {
+        DOM.btnWizardNext.innerHTML = '<span>Lancer l\'installation</span> <i class="fas fa-check"></i>';
+        DOM.btnWizardNext.style.background = '#2196F3';
+    } else {
+        DOM.btnWizardNext.innerHTML = '<span>Étape Suivante</span> <i class="fas fa-arrow-right"></i>';
+        DOM.btnWizardNext.style.background = 'var(--primary-color)';
+    }
+}
+
+// 4. Installation Finale
+async function finishWizard() {
+    console.log("🚀 Démarrage de finishWizard...");
+
+    const config = getServerConfig();
+    const installOptions = {
+        name: config.name,
+        path: config.folderPath,
+        version: config.versionId,
+        type: config.type,
+        isCrossPlay: STATE.isCrossPlay
+    };
+
+    // Feedback
+    if (DOM.btnWizardNext) {
+        DOM.btnWizardNext.disabled = true;
+        DOM.btnWizardNext.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Installation...';
+    }
+    
+    // Force Dashboard
+    const dashBtn = document.querySelector('[data-tab="dashboard"]');
+    if (dashBtn) dashBtn.click();
+    
+    if (DOM.statusText) DOM.statusText.textContent = "Installation en cours...";
+
+    try {
+        // APPEL MAIN PROCESS
+        const result = await window.api.installServer(installOptions);
+
+        if (result.success) {
+            window.MCServerManager.showAlert("Succès", "Installation terminée ! Démarrage imminent...");
+            
+            // Mise à jour état
+            STATE.wizardActive = false;
+            if (DOM.btnWizardNext) DOM.btnWizardNext.style.display = 'none';
+            if (DOM.btnSave) DOM.btnSave.style.display = 'block';
+
+            if (DOM.btnStart) {
+                DOM.btnStart.disabled = false;
+                DOM.btnStart.textContent = 'LANCER LE SERVEUR';
+            }
+            if (DOM.statusText) DOM.statusText.textContent = 'Prêt';
+            if (DOM.statusDot) DOM.statusDot.className = 'dot red';
+
+            // IMPORTANT : On recharge et on sélectionne pour remplir les inputs
+            await loadSavedServers(config.folderPath);
+            
+            selectServer({
+                name: config.name,
+                path: config.folderPath,
+                version: config.versionId, // L'ID suffit souvent
+                type: config.type,
+                // On force l'URL si Vanilla pour éviter le bug "URL manquante"
+                versionUrl: config.versionUrl 
+            });
+
+            // Délai de sécurité avant lancement auto
+            console.log("🚀 Lancement automatique dans 1.5s...");
+            setTimeout(() => {
+                startServer();
+            }, 1500);
+
+        } else {
+            throw new Error(result.error || "Erreur inconnue.");
+        }
+
+    } catch (e) {
+        console.error("❌ Erreur finishWizard :", e);
+        window.MCServerManager.showAlert("Échec", e.message);
+        if (DOM.statusText) DOM.statusText.textContent = "Erreur Install";
+        if (DOM.btnWizardNext) {
+            DOM.btnWizardNext.disabled = false;
+            DOM.btnWizardNext.innerHTML = '<span>Réessayer</span> <i class="fas fa-redo"></i>';
+        }
+        if (DOM.btnStart) DOM.btnStart.disabled = false;
+    }
+}

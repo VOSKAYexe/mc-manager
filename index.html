@@ -98,7 +98,7 @@
             </div>
             <div class="info-banner">
                 <span class="info-icon">💡</span>
-                <span><strong>Astuce :</strong> Avant de démarrer, vérifiez vos réglages dans l'onglet <em>Performances</em>.</span>
+                <span><strong>Astuce :</strong> Pour un petit serveur paper/vanilla: 2 à 4 Go, avec mods: 4 Go minimum - selon la RAM de votre appareil.</span>
             </div>
             
             <div class="card control-card">
@@ -152,6 +152,39 @@
         </section>
 
        <section id="config" class="tab-content">
+        <div id="wizard-choice-screen" style="display: none; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
+        <h2 style="color:var(--primary-color); margin-bottom:40px; font-size: 1.8em;">Quel type de serveur voulez-vous ?</h2>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; max-width: 900px; width: 100%;">
+            
+            <div id="btn-wizard-java" class="wizard-card" style="background:var(--bg-secondary); border:2px solid var(--border-secondary); border-radius:15px; padding:30px; cursor:pointer; transition:0.3s; display: flex; flex-direction: column; align-items: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">☕</div>
+                <h3 style="margin:0 0 5px 0; color:var(--text-primary);">Java Edition</h3>
+                <p style="color:var(--text-secondary); font-size:0.9em; margin-bottom: 20px;">L'expérience PC authentique.</p>
+                
+                <div class="wizard-details">
+                    <div class="detail-row pro"><i class="fas fa-check"></i> <span>Mods infinis (Forge, Fabric, NeoForge)</span></div>
+                    <div class="detail-row pro"><i class="fas fa-check"></i> <span>Stabilité maximale & Moins de bugs</span></div>
+                    <div class="detail-row pro"><i class="fas fa-check"></i> <span>Plug-ins complexes supportés</span></div>
+                    <div class="detail-row con"><i class="fas fa-times"></i> <span>Incompatible avec Consoles/Mobiles</span></div>
+                </div>
+            </div>
+
+            <div id="btn-wizard-cross" class="wizard-card" style="background:var(--bg-secondary); border:2px solid var(--border-secondary); border-radius:15px; padding:30px; cursor:pointer; transition:0.3s; display: flex; flex-direction: column; align-items: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">📱 + 🎮</div>
+                <h3 style="margin:0 0 5px 0; color:var(--text-primary);">Cross-Play</h3>
+                <p style="color:var(--text-secondary); font-size:0.9em; margin-bottom: 20px;">PC + Consoles + Mobiles.</p>
+
+                <div class="wizard-details">
+                    <div class="detail-row pro"><i class="fas fa-check"></i> <span>Tout le monde peut jouer ensemble</span></div>
+                    <div class="detail-row pro"><i class="fas fa-magic"></i> <span>Installation auto (Paper + Geyser)</span></div>
+                    <div class="detail-row con"><i class="fas fa-exclamation-triangle"></i> <span>Pas de mods (seulement Plugins)</span></div>
+                    <div class="detail-row con"><i class="fas fa-exclamation-triangle"></i> <span>Risque de petits bugs visuels</span></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
     <h2>Configuration</h2>
     <div class="card">
         <div class="input-group">
@@ -184,10 +217,20 @@
             <input type="hidden" id="server-type-input" value="vanilla">
         </div>
 
-        <div id="mod-warning-fabric" class="mod-alert" style="display: none;">⚠️ Mode Fabric</div>
-        <div id="mod-warning-forge" class="mod-alert" style="display: none;">⚠️ Mode Forge</div>
-        <div id="mod-warning-neoforge" class="mod-alert" style="display: none; border-color: #e67e22; background: rgba(230, 126, 34, 0.1); color: #e67e22;">🦊 Mode NeoForge</div>
-        <div id="mod-warning-paper" class="mod-alert" style="display: none; background: rgba(76, 175, 80, 0.1); border-color: #4CAF50; color: #e8f5e9;">🚀 Mode Paper</div>
+        <div id="mod-warning-fabric" class="mod-alert" style="display: none;">
+                    <strong>⚠️ Mode Fabric</strong><br>Pour les mods légers. Gérez-les depuis l'onglet "Add-ons".
+                </div>
+                <div id="mod-warning-forge" class="mod-alert" style="display: none;">
+                    <strong>⚠️ Mode Forge</strong><br>Pour les gros modpacks. Gérez-les depuis l'onglet "Add-ons".
+                </div>
+                <div id="mod-warning-neoforge" class="mod-alert" style="display: none; border-color: #e67e22; background: rgba(230, 126, 34, 0.1); color: #e67e22;">
+                    <strong>🦊 Mode NeoForge</strong><br>
+                    Disponible uniquement pour Minecraft <strong>1.20.1 et plus récent</strong>.<br>
+                         <small style="opacity: 0.8;">(Attention : Java 21 est requis pour les versions 1.20.5+)</small>
+                    </div>
+                <div id="mod-warning-paper" class="mod-alert" style="display: none; background: rgba(76, 175, 80, 0.1); border-color: #4CAF50; color: #e8f5e9;">
+                    <strong>🚀 Mode Paper</strong><br>Pour les plugins. Gérez-les depuis l'onglet "Add-ons".
+                </div> 
 
         <button id="btn-open-properties" class="btn-secondary" style="width: 100%; margin-bottom: 20px; border-style: dashed;">
             <i class="fas fa-cogs"></i> CONFIGURER SERVER.PROPERTIES & DISTANCE VUE
@@ -506,7 +549,7 @@
         </div>
     </div>
 
-    <div id="start-alert-modal" class="modal" style="display: none; z-index: 200;">
+    <div id="start-alert-modal" class="modal" style="display: none; z-index: 3000;">
         <div class="modal-content" style="max-width: 450px; text-align: center;">
             <h2 id="alert-title" style="color: #FF9800;">Attention</h2>
             <p id="alert-message" style="font-size: 1.1em; margin: 20px 0;">Message...</p>
@@ -549,17 +592,17 @@
             </div>
             
             <p style="font-size: 1.1em; margin-bottom: 20px; color: #eee;">
-                Vous venez d'installer <strong>MC Server Manager Ultimate</strong>. Voici ce que vous pouvez faire :
+                Vous venez d'installer <strong>MC Manager</strong>. Voici ce que vous pouvez faire :
             </p>
 
             <ul style="list-style: none; padding: 0; margin-bottom: 25px;">
                 <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.5em;">🛠️</span>
-                    <span><strong>Créez tout :</strong> Vanilla, Paper, Fabric, Forge... c'est vous qui choisissez.</span>
+                    <span><strong>Créez tout :</strong> Vanilla, Paper, Fabric, Forge, NeoForge... c'est vous qui choisissez.</span>
                 </li>
                 <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.5em;">⚡</span>
-                    <span><strong>Performance :</strong> Allouez la RAM et gérez la distance de vue facilement.</span>
+                    <span><strong>Performance :</strong> Gérer tout ce qui touche aux performances gràce à son onglet dédié.</span>
                 </li>
                 <li style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.5em;">💾</span>
@@ -621,33 +664,19 @@
     </button>
 
     <div id="properties-modal" class="modal" style="display: none; z-index: 2500;">
-    <div class="modal-content" style="max-width: 600px; text-align: left; height: 80vh; display: flex; flex-direction: column;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="margin: 0; border: none;">Configuration Avancée</h2>
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0;">
+            <h2 style="margin: 0; border: none;"><i class="fas fa-sliders-h"></i> Configuration du Serveur</h2>
             <span id="close-properties-modal" class="close" style="font-size: 2em; cursor: pointer;">&times;</span>
         </div>
 
-        <div style="overflow-y: auto; flex: 1; padding-right: 5px;">
-            
-            <div class="card" style="margin-bottom: 20px;">
-                <div class="input-group">
-                    <label for="render-slider">Distance de vue : <span id="render-display-val" style="color:#4CAF50">8 Chunks</span></label>
-                    <div class="row row-center">
-                        <input type="range" id="render-slider" min="2" max="32" value="8" step="2" class="range-slider">
-                        <input type="number" id="render-input-custom" style="display: none; flex: 1;" placeholder="Chunks" min="2" class="styled-input">
-                        <button id="btn-render-toggle" class="btn-small" style="width: auto; margin-left: 10px;">Manuel</button>
-                    </div>
-                </div>
+        <div id="properties-editor-container" style="overflow-y: auto; flex: 1; padding-right: 10px; padding-bottom: 20px;">
             </div>
 
-            <div class="card">
-                <h3>server.properties</h3>
-                <div id="properties-editor-container" class="properties-editor-container"></div>
-            </div>
-        </div>
-
-        <div class="row" style="margin-top: 20px; justify-content: flex-end;">
-            <button id="btn-save-properties-modal" class="btn-primary">Enregistrer & Fermer</button>
+        <div class="row" style="margin-top: 20px; justify-content: flex-end; flex-shrink: 0; border-top: 1px solid var(--border-primary); padding-top: 15px;">
+            <button id="btn-save-properties-modal" class="btn-primary" style="width: auto; padding: 12px 30px;">
+                <i class="fas fa-save"></i> Enregistrer & Fermer
+            </button>
         </div>
     </div>
 </div>
