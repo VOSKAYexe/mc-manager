@@ -1,48 +1,30 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>MC Manager Remote</title>
+<html lang="fr">
+<head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MC Manager Web</title>
     <link rel="manifest" href="manifest.json">
-  </head>
-  <body>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="home-screen" class="container">
+        <h1 class="logo">MC MANAGER</h1>
+        <p class="subtitle">Télécommande Web</p>
+        <div class="card">
+            <label class="label">IP Manuelle</label>
+            <input type="text" id="ip-input" class="input" value="http://192.168.1.15:3000">
+            <button class="btn-primary" onclick="connect()">CONNEXION</button>
+        </div>
+        <p style="color:#666; margin: 20px 0;">— OU —</p>
+        <button class="btn-secondary" onclick="alert('Le scan QR n\'est pas dispo en version Web simple')">SCANNER QR CODE</button>
+    </div>
+
+    <div id="web-screen" style="display:none; height:100vh; width:100vw;">
+        <button class="close-btn" onclick="disconnect()">Fermer / Déconnecter</button>
+        <iframe id="app-frame" src="" style="width:100%; height:calc(100% - 50px); border:none;"></iframe>
+    </div>
+
     <script src="index.js"></script>
-
-    <style>
-  #ios-install-prompt {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    right: 20px;
-    background: #ffffff;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    z-index: 1000;
-    font-family: sans-serif;
-    border: 1px solid #ddd;
-  }
-</style>
-
-<div id="ios-install-prompt">
-  <p style="margin:0 0 10px 0; color:#333;"><strong>Installer l'app :</strong></p>
-  <p style="margin:0; font-size:14px; color:#666;">
-    Appuyez sur le bouton <img src="https://img.icons8.com/ios/20/000000/export.png" style="vertical-align:middle"> (Partager), puis faites défiler pour choisir <strong>"Sur l'écran d'accueil"</strong>.
-  </p>
-  <button onclick="document.getElementById('ios-install-prompt').style.display='none'" style="margin-top:10px; border:none; background:none; color:blue; font-weight:bold;">Fermer</button>
-</div>
-
-<script>
-  // Vérifie si c'est un appareil iOS (iPhone/iPad)
-  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  // Vérifie si l'app est déjà installée (en mode standalone)
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-
-  if (isIos && !isStandalone) {
-    document.getElementById('ios-install-prompt').style.display = 'block';
-  }
-</script>
-  </body>
+</body>
 </html>
