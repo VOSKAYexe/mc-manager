@@ -6,6 +6,7 @@
     <title>MC Manager Web</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
     <div id="home-screen" class="container">
@@ -17,7 +18,12 @@
             <button class="btn-primary" onclick="connect()">CONNEXION</button>
         </div>
         <p style="color:#666; margin: 20px 0;">— OU —</p>
-        <button class="btn-secondary" onclick="alert('Le scan QR n\'est pas dispo en version Web simple')">SCANNER QR CODE</button>
+        <button class="btn-secondary" onclick="startScan()">SCANNER QR CODE</button>
+    </div>
+
+    <div id="scan-screen" style="display:none; flex-direction:column; height:100vh; background:#000;">
+        <div id="reader" style="width:100%; flex:1;"></div>
+        <button class="close-btn" onclick="stopScan()">Annuler</button>
     </div>
 
     <div id="web-screen" style="display:none; height:100vh; width:100vw;">
